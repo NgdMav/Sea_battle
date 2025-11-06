@@ -8,17 +8,16 @@ public class CommandThread extends Thread
 	protected HashMap<String, CmdHandler> smap = new HashMap<String, CmdHandler> ();
 	protected HashMap<String, CmdHandler> map =  new HashMap<String, CmdHandler> ();
 	
-	protected static void insert(HashMap<String, CmdHandler> m, String name, CmdHandler handler ) {		
+	protected static void insert(HashMap<String, CmdHandler> map, String name, CmdHandler handler ) {		
 		if ( name != null ) {
-			m.put( name, handler );
+			map.put( name, handler );
 		}
 	}
 	
 	@Override
 	public synchronized void putHandler(String shortName, String fullName, CmdHandler handler ) {
 		if ( shortName == null && fullName == null ) {
-			throw new IllegalArgumentException( 
-					"Bad arguments: shortName and fullName can not be null simultaneusly!" );
+			throw new IllegalArgumentException("Bad arguments: shortName and fullName can not be null simultaneusly!" );
 		}
 		CommandThread.insert(smap, shortName, handler);
 		CommandThread.insert(map, fullName, handler);
