@@ -7,7 +7,7 @@ public class MessageUserResult extends MessageResult {
 
 	private static final long serialVersionUID = 1L;
 	
-	public String[] userNics = null;
+	private String[] userNics = null;
 
 	public MessageUserResult(String[] userNics) {
 		super(Protocol.CMD_USER);
@@ -17,5 +17,9 @@ public class MessageUserResult extends MessageResult {
 	public MessageUserResult(boolean isGood, String message, String[] userNics) {
 		super(Protocol.CMD_USER, isGood, message);
 		this.userNics = userNics;
+	}
+
+	public String[] getNics() {
+		return userNics;
 	}
 }

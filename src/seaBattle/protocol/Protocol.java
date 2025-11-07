@@ -6,6 +6,10 @@ interface CMD {
 	static final byte CMD_CONNECT = 3;
 	static final byte CMD_DISCONNECT = 4;
 	static final byte CMD_USER = 5;
+	static final byte CMD_CHALLENGE = 6;
+	static final byte CMD_CHALLENGE_REQUEST = 7;
+	static final byte CMD_CHALLENGE_RESPONSE = 8;
+	static final byte CMD_CHALLENGE_FINAL = 9;
 }
 
 interface RESULT {

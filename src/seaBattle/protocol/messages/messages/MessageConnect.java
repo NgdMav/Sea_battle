@@ -7,8 +7,8 @@ public class MessageConnect extends Message {
 	
 	private static final long serialVersionUID = 1L;
 	
-	public String userNic;
-	public String userFullName;
+	private String userNic;
+	private String userFullName;
 	
 	public MessageConnect( String userNic, String userFullName ) {
 		super(Protocol.CMD_CONNECT);
@@ -16,4 +16,11 @@ public class MessageConnect extends Message {
 		this.userFullName = userFullName;
 	}
 	
+	public String getNic() {
+		return userNic;
+	}
+
+	public String getFullName() {
+		return userFullName;
+	}
 }
