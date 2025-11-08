@@ -12,7 +12,7 @@ public class MessagePlaceShips extends MessageRequest {
 
     private List<Ship> ships;
 
-    public MessagePlaceShips(byte id, String from, long sessionId, List<Ship> ships) {
+    public MessagePlaceShips(String from, long sessionId, List<Ship> ships) {
         super(Protocol.CMD_SHIP_PLACE, from, sessionId);
         this.ships = ships;
     }

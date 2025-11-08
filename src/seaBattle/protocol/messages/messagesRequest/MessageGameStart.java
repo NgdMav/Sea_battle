@@ -10,7 +10,7 @@ public class MessageGameStart extends MessageRequest {
     private String opponentNic;
     private boolean yourTurn;
 
-    public MessageGameStart(byte id, String fromNic, long sessionId, String opponentNic, boolean yourTurn) {
+    public MessageGameStart(String fromNic, long sessionId, String opponentNic, boolean yourTurn) {
         super(Protocol.CMD_GAME_STARTS, fromNic, sessionId);
         this.opponentNic = opponentNic;
         this.yourTurn = yourTurn;
