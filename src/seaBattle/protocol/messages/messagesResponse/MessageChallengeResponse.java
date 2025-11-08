@@ -10,13 +10,13 @@ public class MessageChallengeResponse extends MessageResponse {
     private long challengeId;
     private boolean accepted;
 
-    protected MessageChallengeResponse(int resultCode, String message, long challengeId, boolean accepted) {
+    public MessageChallengeResponse(int resultCode, String message, long challengeId, boolean accepted) {
         super(Protocol.CMD_CHALLENGE_RESPONSE, resultCode, message);
         this.challengeId = challengeId;
         this.accepted = accepted;
     }
 
-    protected MessageChallengeResponse(long challengeId, boolean accepted) {
+    public MessageChallengeResponse(long challengeId, boolean accepted) {
         super(Protocol.CMD_CHALLENGE_RESPONSE);
         this.challengeId = challengeId;
         this.accepted = accepted;

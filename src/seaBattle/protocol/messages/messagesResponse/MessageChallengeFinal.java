@@ -7,12 +7,12 @@ public class MessageChallengeFinal extends MessageResponse {
 
     private static final long serialVersionUID = 1L;
 
-    protected MessageChallengeFinal(int resultCode, String message, long sessionId) {
+    public MessageChallengeFinal(int resultCode, String message, long sessionId) {
         super(Protocol.CMD_CHALLENGE_FINAL, resultCode, message);
         setSessionId(sessionId);
     }
     
-    protected MessageChallengeFinal(long sessionId) {
+    public MessageChallengeFinal(long sessionId) {
         super(Protocol.CMD_CHALLENGE_FINAL);
         setSessionId(sessionId);
     }

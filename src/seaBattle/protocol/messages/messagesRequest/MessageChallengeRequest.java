@@ -9,7 +9,7 @@ public class MessageChallengeRequest extends MessageRequest {
 
     private long challengeId;
 
-    protected MessageChallengeRequest(String from, long challengeId) {
+    public MessageChallengeRequest(String from, long challengeId) {
         super(Protocol.CMD_CHALLENGE_REQUEST, from);
         this.challengeId = challengeId;
     }
