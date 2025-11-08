@@ -10,6 +10,8 @@ interface CMD {
 	static final byte CMD_CHALLENGE_REQUEST = 7;
 	static final byte CMD_CHALLENGE_RESPONSE = 8;
 	static final byte CMD_CHALLENGE_FINAL = 9;
+	static final byte CMD_GAME_STARTS = 10;
+	static final byte CMD_SHIP_PLACE = 11;
 }
 
 interface RESULT {
