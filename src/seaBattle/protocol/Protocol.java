@@ -1,9 +1,15 @@
 package seaBattle.protocol;
 
 interface CMD {
-	static final byte CMD_CONNECT 	= 1;
-	static final byte CMD_DISCONNECT= 2;
-	static final byte CMD_USER 	= 3;
+	static final byte CMD_PING = 1;
+	static final byte CMD_PONG = 2;
+	static final byte CMD_CONNECT = 3;
+	static final byte CMD_DISCONNECT = 4;
+	static final byte CMD_USER = 5;
+	static final byte CMD_CHALLENGE = 6;
+	static final byte CMD_CHALLENGE_REQUEST = 7;
+	static final byte CMD_CHALLENGE_RESPONSE = 8;
+	static final byte CMD_CHALLENGE_FINAL = 9;
 }
 
 interface RESULT {
@@ -17,7 +23,7 @@ interface PORT {
 }
 
 public class Protocol implements CMD, RESULT, PORT {
-	private static final byte CMD_MIN = CMD_CONNECT;
+	private static final byte CMD_MIN = CMD_PING;
 	private static final byte CMD_MAX = CMD_USER;
 	
 	public static boolean validID( byte id ) {
