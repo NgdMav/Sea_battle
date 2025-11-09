@@ -7,10 +7,10 @@ import java.util.List;
 import seaBattle.gameLogic.Ship.Orientation;
 
 public class Player {
-    public String userNic;
+    private String userNic;
     
-    public List<Ship> ships;
-    public int[][] field;
+    private List<Ship> ships;
+    private int[][] field;
 
     public Player(String nic) {
         userNic = nic;
@@ -119,5 +119,17 @@ public class Player {
     private int[][] createRandomField() {
         int[][] resField = new int[12][12];
         return resField;
+    }
+
+    public String getNic() {
+        return userNic;
+    }
+
+    public List<Ship> getShips() {
+        return ships;
+    }
+
+    public int[][] getField() {
+        return field;
     }
 }
