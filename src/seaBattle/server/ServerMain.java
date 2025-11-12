@@ -406,6 +406,7 @@ class ServerClientHandler extends Thread {
 						session = ServerMain.getSession(msggetf.getSessionId());
 						int[][] field = session.getField(msggetf.getFrom());
 						sendMessage(new MessageGetFieldResult(field));
+						break;
 				}
 			}	
 		} catch (IOException e) {
@@ -483,4 +484,3 @@ class ServerClientHandler extends Thread {
 		return old;
 	}
 }
-

@@ -59,9 +59,9 @@ public class GameSession {
         if (gameRuns) {
             return false;
         }
-        if (A.getNic() == nic) {
+        if (A.getNic().equals(nic)) {
             A.setPlaceShips(ships);
-        } else if(B.getNic() == nic) {
+        } else if(B.getNic().equals(nic)) {
             A.setPlaceShips(ships);
         } else {
             // throw ex;
@@ -71,9 +71,9 @@ public class GameSession {
     }
 
     public boolean playerReady(String nic) {
-        if (A.getNic() == nic) {
+        if (A.getNic().equals(nic)) {
             aready = true;
-        } else if(B.getNic() == nic) {
+        } else if(B.getNic().equals(nic)) {
             bready = true;
         } else {
             // throw ex;
@@ -87,10 +87,10 @@ public class GameSession {
 
     public MoveResult move(String nic, int x, int y) {
         MoveResult res;
-        if (A.getNic() == nic) {
+        if (A.getNic().equals(nic)) {
             res = B.move(x, y);
         }
-        else if (B.getNic() == nic){
+        else if (B.getNic().equals(nic)){
             res = A.move(x, y);
         }
         else {
@@ -103,23 +103,23 @@ public class GameSession {
     }
 
     public String getEnemyNic(String from) {
-        if (A.getNic() == from) {
+        if (A.getNic().equals(from)) {
             return B.getNic();
         }
-        if (B.getNic() == from) {
+        if (B.getNic().equals(from)) {
             return A.getNic();
         }
         return "";
     }
 
     public int[][] getField(String nic) {
-        if (A.getNic() == nic) {
+        if (A.getNic().equals(nic)) {
             return A.getField();
         }
-        else if (B.getNic() == nic) {
+        else if (B.getNic().equals(nic)) {
             return B.getField();
         }
-        
+
         return null;
     }
 }
