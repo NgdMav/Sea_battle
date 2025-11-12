@@ -16,6 +16,8 @@ interface CMD {
 	static final byte CMD_GAMEOVER = 13;
 	static final byte CMD_FORFEIT = 14;
 	static final byte CMD_ERROR = 15;
+	static final byte CMD_READY = 16;
+	static final byte CMD_GET_FIELD = 17;
 }
 
 interface RESULT {
