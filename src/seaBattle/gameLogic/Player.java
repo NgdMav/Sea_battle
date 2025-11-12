@@ -132,4 +132,9 @@ public class Player {
     public int[][] getField() {
         return field;
     }
+
+    public void setPlaceShips(List<Ship> ships) {
+        checkShips(ships);
+        field = createField(ships);
+    }
 }

@@ -20,10 +20,13 @@ import seaBattle.protocol.messages.messages.MessageConnect;
 import seaBattle.protocol.messages.messages.MessageUser;
 import seaBattle.protocol.messages.messagesRequest.MessageChallengeRequest;
 import seaBattle.protocol.messages.messagesRequest.MessageGameStart;
+import seaBattle.protocol.messages.messagesRequest.MessagePlaceShips;
+import seaBattle.protocol.messages.messagesRequest.MessageReadyToPlay;
 import seaBattle.protocol.messages.messagesResponse.MessageChallengeResponse;
 import seaBattle.protocol.messages.messagesResult.MessageChallengeResult;
 import seaBattle.protocol.messages.messagesResult.MessageConnectResult;
 import seaBattle.protocol.messages.messagesResult.MessageError;
+import seaBattle.protocol.messages.messagesResult.MessagePlaceShipsResult;
 import seaBattle.protocol.messages.messagesResult.MessagePong;
 import seaBattle.protocol.messages.messagesResult.MessageUserResult;
 
@@ -353,9 +356,18 @@ class ServerClientHandler extends Thread {
 						break;	
 							
 					case Protocol.CMD_SHIP_PLACE:
-						
+						MessagePlaceShips mPlaceShips = (MessagePlaceShips) msg;
+						GameSession session = ServerMain.getSession(mPlaceShips.getSessionId());
+						boolean good = session.setPlaceShip(mPlaceShips.getFrom(), mPlaceShips.getShips());
+						sendMessage(new MessagePlaceShipsResult(good, ""));
 						break;	
-								
+					
+					case Protocol.CMD_READY:
+						MessageReadyToPlay mready = (MessageReadyToPlay) msg;
+						session = ServerMain.getSession(mready.getSessionId());
+						session.playerReady(mready.getFrom());
+						break;
+
 					case Protocol.CMD_MOVE:
 
 						break;	
