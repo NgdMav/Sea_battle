@@ -55,14 +55,14 @@ public class GameSession {
         return B;
     }
 
-    public boolean setPlaceShip(String nic, List<Ship> ships) {
+    public synchronized boolean setPlaceShip(String nic, List<Ship> ships) {
         if (gameRuns) {
             return false;
         }
         if (A.getNic().equals(nic)) {
             A.setPlaceShips(ships);
         } else if(B.getNic().equals(nic)) {
-            A.setPlaceShips(ships);
+            B.setPlaceShips(ships);
         } else {
             // throw ex;
             return false;
@@ -70,7 +70,7 @@ public class GameSession {
         return true;
     }
 
-    public boolean playerReady(String nic) {
+    public synchronized boolean playerReady(String nic) {
         if (A.getNic().equals(nic)) {
             aready = true;
         } else if(B.getNic().equals(nic)) {
@@ -85,7 +85,7 @@ public class GameSession {
         return true;
     }
 
-    public MoveResult move(String nic, int x, int y) {
+    public synchronized MoveResult move(String nic, int x, int y) {
         MoveResult res;
         if (A.getNic().equals(nic)) {
             res = B.move(x, y);
@@ -94,7 +94,7 @@ public class GameSession {
             res = A.move(x, y);
         }
         else {
-            res = A.new MoveResult(false, false, false, new int[0][0]);
+            res = A.new MoveResult(false, false, false, new int[12][12]);
         }
         if (res.gameOver) {
             gameEnd();
