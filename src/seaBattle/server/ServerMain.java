@@ -20,6 +20,7 @@ import seaBattle.protocol.messages.messages.MessageChallenge;
 import seaBattle.protocol.messages.messages.MessageConnect;
 import seaBattle.protocol.messages.messages.MessageUser;
 import seaBattle.protocol.messages.messagesRequest.MessageChallengeRequest;
+import seaBattle.protocol.messages.messagesRequest.MessageForfeit;
 import seaBattle.protocol.messages.messagesRequest.MessageGameStart;
 import seaBattle.protocol.messages.messagesRequest.MessageMove;
 import seaBattle.protocol.messages.messagesRequest.MessagePlaceShips;
@@ -28,6 +29,7 @@ import seaBattle.protocol.messages.messagesResponse.MessageChallengeResponse;
 import seaBattle.protocol.messages.messagesResult.MessageChallengeResult;
 import seaBattle.protocol.messages.messagesResult.MessageConnectResult;
 import seaBattle.protocol.messages.messagesResult.MessageError;
+import seaBattle.protocol.messages.messagesResult.MessageGameOver;
 import seaBattle.protocol.messages.messagesResult.MessageMoveResult;
 import seaBattle.protocol.messages.messagesResult.MessagePlaceShipsResult;
 import seaBattle.protocol.messages.messagesResult.MessagePong;
@@ -375,10 +377,25 @@ class ServerClientHandler extends Thread {
 						MessageMove msgmove = (MessageMove) msg;
 						session = ServerMain.getSession(msgmove.getSessionId());
 						MoveResult res = session.move(msgmove.getFrom(), msgmove.getX(), msgmove.getY());
-						sendMessage(new MessageMoveResult(true, "Move done", msgmove.getSessionId(), msgmove.getX(), msgmove.getY(), res.hitted, res.sunked, res.gameOver, res.field));
+						sendMessage(new MessageMoveResult(true, msgmove.getFrom() + " move done", msgmove.getSessionId(), msgmove.getX(), msgmove.getY(), res.hitted, res.sunked, res.gameOver, res.field));
+
+						ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(msgmove.getFrom()));
+						enemy.sendMessage((new MessageMoveResult(true, msgmove.getFrom() + " move done", msgmove.getSessionId(), msgmove.getX(), msgmove.getY(), res.hitted, res.sunked, res.gameOver, res.field)));
+
+						if (res.gameOver) {
+							sendMessage(new MessageGameOver(true, "Game over", msgmove.getSessionId(), msgmove.getFrom()));
+							enemy.sendMessage(new MessageGameOver(true, "Game over", msgmove.getSessionId(), msgmove.getFrom()));
+						}
 						break;
 									
 					case Protocol.CMD_FORFEIT:
+						MessageForfeit msgforfeit = (MessageForfeit) msg;
+						session = ServerMain.getSession(msgforfeit.getSessionId());
+						session.gameEnd();
+
+						enemy = ServerMain.getUser(session.getEnemyNic(msgforfeit.getFrom()));
+						sendMessage(new MessageGameOver(true, "Game over", msgforfeit.getSessionId(), enemy.userNic));
+						enemy.sendMessage(new MessageGameOver(true, "Game over", msgforfeit.getSessionId(), enemy.userNic));
 
 						break;	
 										

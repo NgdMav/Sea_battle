@@ -39,6 +39,8 @@ public class GameSession {
         gameRuns = false;
         aready = false;
         bready = false;
+        A.clearField();
+        B.clearField();
     }
 
     public long getSessionId() {
@@ -94,6 +96,19 @@ public class GameSession {
         else {
             res = A.new MoveResult(false, false, false, new int[0][0]);
         }
+        if (res.gameOver) {
+            gameEnd();
+        }
         return res;
+    }
+
+    public String getEnemyNic(String from) {
+        if (A.getNic() == from) {
+            return B.getNic();
+        }
+        if (B.getNic() == from) {
+            return A.getNic();
+        }
+        return "";
     }
 }
