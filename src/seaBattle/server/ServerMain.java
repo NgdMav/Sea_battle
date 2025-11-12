@@ -11,6 +11,7 @@ import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 
 import seaBattle.gameLogic.GameSession;
+import seaBattle.gameLogic.Player.MoveResult;
 import seaBattle.protocol.Protocol;
 import seaBattle.protocol.cmd.CmdHandler;
 import seaBattle.protocol.cmd.CommandThread;
@@ -20,12 +21,14 @@ import seaBattle.protocol.messages.messages.MessageConnect;
 import seaBattle.protocol.messages.messages.MessageUser;
 import seaBattle.protocol.messages.messagesRequest.MessageChallengeRequest;
 import seaBattle.protocol.messages.messagesRequest.MessageGameStart;
+import seaBattle.protocol.messages.messagesRequest.MessageMove;
 import seaBattle.protocol.messages.messagesRequest.MessagePlaceShips;
 import seaBattle.protocol.messages.messagesRequest.MessageReadyToPlay;
 import seaBattle.protocol.messages.messagesResponse.MessageChallengeResponse;
 import seaBattle.protocol.messages.messagesResult.MessageChallengeResult;
 import seaBattle.protocol.messages.messagesResult.MessageConnectResult;
 import seaBattle.protocol.messages.messagesResult.MessageError;
+import seaBattle.protocol.messages.messagesResult.MessageMoveResult;
 import seaBattle.protocol.messages.messagesResult.MessagePlaceShipsResult;
 import seaBattle.protocol.messages.messagesResult.MessagePong;
 import seaBattle.protocol.messages.messagesResult.MessageUserResult;
@@ -37,7 +40,7 @@ public class ServerMain {
 	public static void main(String[] args) {
 
 		try ( ServerSocket serv = new ServerSocket( Protocol.PORT  )) {
-			System.err.println("initialized");
+			System.out.println("initialized");
 			ServerStopThread tester = new ServerStopThread();
 			tester.start();
 			while (true) {
@@ -45,13 +48,13 @@ public class ServerMain {
 				if ( sock != null ) {
 					if ( ServerMain.getNumUsers() < ServerMain.MAX_USERS )
 					{
-						System.err.println( sock.getInetAddress().getHostName() + " connected" );
+						System.out.println( sock.getInetAddress().getHostName() + " connected" );
 						ServerClientHandler server = new ServerClientHandler(sock);
 						server.start();
 					}
 					else
 					{
-						System.err.println( sock.getInetAddress().getHostName() + " connection rejected" );
+						System.out.println( sock.getInetAddress().getHostName() + " connection rejected" );
 						sock.close();
 					}
 				} 
@@ -63,7 +66,7 @@ public class ServerMain {
 			System.err.println(e);
 		} finally {
 			stopAllUsers();
-			System.err.println("stopped");	
+			System.out.println("stopped");	
 		}
 		try {
 			Thread.sleep(1000);
@@ -369,8 +372,11 @@ class ServerClientHandler extends Thread {
 						break;
 
 					case Protocol.CMD_MOVE:
-
-						break;	
+						MessageMove msgmove = (MessageMove) msg;
+						session = ServerMain.getSession(msgmove.getSessionId());
+						MoveResult res = session.move(msgmove.getFrom(), msgmove.getX(), msgmove.getY());
+						sendMessage(new MessageMoveResult(true, "Move done", msgmove.getSessionId(), msgmove.getX(), msgmove.getY(), res.hitted, res.sunked, res.gameOver, res.field));
+						break;
 									
 					case Protocol.CMD_FORFEIT:
 

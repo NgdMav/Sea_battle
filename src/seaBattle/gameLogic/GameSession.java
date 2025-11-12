@@ -2,6 +2,8 @@ package seaBattle.gameLogic;
 
 import java.util.List;
 
+import seaBattle.gameLogic.Player.MoveResult;
+
 public class GameSession {
     private Player A;
     private boolean aready;
@@ -79,5 +81,19 @@ public class GameSession {
             gameStart();
         }
         return true;
+    }
+
+    public MoveResult move(String nic, int x, int y) {
+        MoveResult res;
+        if (A.getNic() == nic) {
+            res = B.move(x, y);
+        }
+        else if (B.getNic() == nic){
+            res = A.move(x, y);
+        }
+        else {
+            res = A.new MoveResult(false, false, false, new int[0][0]);
+        }
+        return res;
     }
 }

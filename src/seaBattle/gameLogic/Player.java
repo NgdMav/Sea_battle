@@ -1,12 +1,22 @@
 package seaBattle.gameLogic;
 
 import java.security.InvalidParameterException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 
 import seaBattle.gameLogic.Ship.Orientation;
 
-public class Player {
+interface Field {
+    static final int EMPTY = 0;
+    static final int SHIP = 1;
+    static final int MISS = 2;
+    static final int HITTED = 3;
+    static final int CHECK = 4;
+}
+
+public class Player implements Field {
     private String userNic;
     
     private List<Ship> ships;
@@ -97,6 +107,11 @@ public class Player {
 
     private int[][] createField(List<Ship> ships) {
         int[][] resField = new int[12][12];
+        for (int i = 0; i < resField.length; i++) {
+            for (int j = 0; j < resField.length; j++) {
+                resField[i][j] = EMPTY;
+            }
+        }
         for (Ship s : ships) {
             for (int i = 0; i < s.getLength(); i++) {
                 int x;
@@ -110,7 +125,7 @@ public class Player {
                     y = s.getY() + i;
                 }
 
-                resField[x][y] = 1;
+                resField[x][y] = SHIP;
             }
         }
         return resField;
@@ -136,5 +151,113 @@ public class Player {
     public void setPlaceShips(List<Ship> ships) {
         checkShips(ships);
         field = createField(ships);
+    }
+
+    public class MoveResult {
+        public boolean hitted;
+        public boolean sunked;
+        public boolean gameOver;
+        public int[][] field;
+
+        public MoveResult(boolean hitted, boolean sunked, boolean gameOver, int[][] field) {
+            this.hitted = hitted;
+            this.sunked = sunked;
+            this.gameOver = gameOver;
+            this.field = field;
+        }
+    }
+
+    public MoveResult move(int x, int y) {
+        boolean hitted = false;
+        boolean sunked = false;
+        boolean gameOver = false;
+        if (field[x][y] != SHIP) {
+            if (field[x][y] == EMPTY) {
+                field[x][y] = MISS;
+            }
+            return new MoveResult(hitted, sunked, gameOver, getSafeField(field));
+        }
+        hitted = true;
+        field[x][y] = HITTED;
+
+        sunked = checkIsSunked(x, y);
+        for (int i = 0; i < field.length; i++) {
+            for (int j = 0; j < field.length; j++) {
+                if (field[i][j] == CHECK) {
+                    field[i][j] = HITTED;
+                }
+            }
+        }
+
+        gameOver = true;
+        if (sunked) {
+            for (int i = 0; i < field.length; i++) {
+                for (int j = 0; j < field.length; j++) {
+                    if(field[i][j] == SHIP) {
+                        gameOver = false;
+                        return new MoveResult(hitted, sunked, gameOver, getSafeField(field));
+                    }
+                }
+            }
+        }
+        MoveResult res = new MoveResult(hitted, sunked, gameOver, getSafeField(field));
+        return res;
+    }
+
+    private boolean checkIsSunked(int x, int y) {
+        Queue<int[]> q = new ArrayDeque<>();
+        q.add(new int[]{x, y});
+        field[x][y] = CHECK;
+
+        while (!q.isEmpty()) {
+            int[] el = q.poll();
+            int xnew = el[0];
+            int ynew = el[1];
+
+            if (field[xnew - 1][ynew] == SHIP) {
+                return false;
+            }
+            if (field[xnew + 1][ynew] == SHIP) {
+                return false;
+            }
+            if (field[xnew][ynew - 1] == SHIP) {
+                return false;
+            }
+            if (field[xnew][ynew + 1] == SHIP) {
+                return true;
+            }
+
+            if (field[xnew - 1][ynew] == HITTED) {
+                q.add(new int[]{xnew - 1, ynew});
+                field[xnew - 1][ynew] = CHECK;
+            }
+
+            if (field[xnew + 1][ynew] == HITTED) {
+                q.add(new int[]{xnew + 1, ynew});
+                field[xnew + 1][ynew] = CHECK;
+            }
+            
+            if (field[xnew][ynew - 1] == HITTED) {
+                q.add(new int[]{xnew, ynew - 1});
+                field[xnew][ynew - 1] = CHECK;
+            }
+            
+            if (field[xnew][ynew + 1] == HITTED) {
+                q.add(new int[]{xnew, ynew + 1});
+                field[xnew][ynew + 1] = CHECK;
+            }
+        }
+
+        return true;
+    }
+
+    private int[][] getSafeField(int[][] field) {
+        int[][] res = new int[12][12];
+        for (int i = 0; i < res.length; i++) {
+            for (int j = 0; j < res.length; j++) {
+                res[i][j] = (field[i][j] == SHIP) ? EMPTY : field[i][j];
+            }
+        }
+        return res;
     }
 }
