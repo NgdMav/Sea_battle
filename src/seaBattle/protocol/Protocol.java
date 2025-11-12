@@ -32,7 +32,7 @@ interface PORT {
 
 public class Protocol implements CMD, RESULT, PORT {
 	private static final byte CMD_MIN = CMD_PING;
-	private static final byte CMD_MAX = CMD_USER;
+	private static final byte CMD_MAX = CMD_GET_FIELD;
 	
 	public static boolean validID( byte id ) {
 		return id >= CMD_MIN && id <= CMD_MAX; 

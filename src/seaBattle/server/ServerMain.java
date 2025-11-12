@@ -378,15 +378,28 @@ class ServerClientHandler extends Thread {
 					case Protocol.CMD_MOVE:
 						MessageMove msgmove = (MessageMove) msg;
 						session = ServerMain.getSession(msgmove.getSessionId());
-						MoveResult res = session.move(msgmove.getFrom(), msgmove.getX(), msgmove.getY());
-						sendMessage(new MessageMoveResult(true, msgmove.getFrom() + " move done", msgmove.getSessionId(), msgmove.getX(), msgmove.getY(), res.hitted, res.sunked, res.gameOver, res.field));
+						try {
+							MoveResult res = session.move(msgmove.getFrom(), msgmove.getX(), msgmove.getY());
 
-						ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(msgmove.getFrom()));
-						enemy.sendMessage((new MessageMoveResult(true, msgmove.getFrom() + " move done", msgmove.getSessionId(), msgmove.getX(), msgmove.getY(), res.hitted, res.sunked, res.gameOver, res.field)));
+							sendMessage(new MessageMoveResult(true,
+										msgmove.getFrom() + " move done",
+										msgmove.getSessionId(), msgmove.getX(), 
+										msgmove.getY(), res.hitted, res.sunked, 
+										res.gameOver, res.field));
 
-						if (res.gameOver) {
-							sendMessage(new MessageGameOver(true, "Game over", msgmove.getSessionId(), msgmove.getFrom()));
-							enemy.sendMessage(new MessageGameOver(true, "Game over", msgmove.getSessionId(), msgmove.getFrom()));
+							ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(msgmove.getFrom()));
+							enemy.sendMessage((new MessageMoveResult(true, 
+										msgmove.getFrom() + " move done", 
+										msgmove.getSessionId(), msgmove.getX(), 
+										msgmove.getY(), res.hitted, res.sunked, 
+										res.gameOver, res.field)));
+
+							if (res.gameOver) {
+								sendMessage(new MessageGameOver(true, "Game over", msgmove.getSessionId(), msgmove.getFrom()));
+								enemy.sendMessage(new MessageGameOver(true, "Game over", msgmove.getSessionId(), msgmove.getFrom()));
+							}
+						} catch (IllegalStateException e) {
+							sendMessage(new MessageError("Not your turn, wait for opponent!"));
 						}
 						break;
 									
@@ -395,7 +408,7 @@ class ServerClientHandler extends Thread {
 						session = ServerMain.getSession(msgforfeit.getSessionId());
 						session.gameEnd();
 
-						enemy = ServerMain.getUser(session.getEnemyNic(msgforfeit.getFrom()));
+						ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(msgforfeit.getFrom()));
 						sendMessage(new MessageGameOver(true, "Game over", msgforfeit.getSessionId(), enemy.userNic));
 						enemy.sendMessage(new MessageGameOver(true, "Game over", msgforfeit.getSessionId(), enemy.userNic));
 

@@ -12,6 +12,9 @@ public class GameSession {
     private long sessionId;
     boolean gameRuns;
 
+    private String currentTurnNic;
+
+
     public GameSession(long sessionId, String playerANic, String playerBNic, List<Ship> playerAShips, List<Ship> playerBShips) {
         this.sessionId = sessionId;
         if (playerAShips == null) {
@@ -29,16 +32,20 @@ public class GameSession {
         gameRuns = false;
         aready = false;
         bready = false;
+        currentTurnNic = null;
     }
 
     public void gameStart() {
         gameRuns = true;
+        currentTurnNic = A.getNic();
+        System.out.println("Game started: first move = " + currentTurnNic);
     }
 
     public void gameEnd() {
         gameRuns = false;
         aready = false;
         bready = false;
+        currentTurnNic = null;
         A.clearField();
         B.clearField();
     }
@@ -86,6 +93,11 @@ public class GameSession {
     }
 
     public synchronized MoveResult move(String nic, int x, int y) {
+        if (!gameRuns) throw new IllegalStateException("Game not started yet!");
+        if (!nic.equals(currentTurnNic)) {
+            throw new IllegalStateException("Not your turn, " + nic);
+        }
+
         MoveResult res;
         if (A.getNic().equals(nic)) {
             res = B.move(x, y);
@@ -96,10 +108,18 @@ public class GameSession {
         else {
             res = A.new MoveResult(false, false, false, new int[12][12]);
         }
-        if (res.gameOver) {
+
+        if (!res.gameOver) {
+            currentTurnNic = getEnemyNic(nic);
+        } else {
             gameEnd();
         }
+
         return res;
+    }
+
+    public synchronized String getCurrentTurnNic() {
+        return currentTurnNic;
     }
 
     public String getEnemyNic(String from) {
