@@ -379,7 +379,7 @@ class ServerClientHandler extends Thread {
 				}
 			}	
 		} catch (IOException e) {
-			System.err.print("Disconnect...");
+			System.out.print("Disconnect...");
 		} finally {
 			disconnect();
 		}
@@ -389,6 +389,7 @@ class ServerClientHandler extends Thread {
 		try {
 			os.writeObject(msg);
 			os.flush();
+			System.out.println("Massege send to " + userNic + " (type = " + msg.getClass().toString() + ")");
 		} catch (IOException e) {
 			System.err.println("Error sending to " + userNic + ": " + e.getMessage());
 		}
@@ -420,7 +421,7 @@ class ServerClientHandler extends Thread {
 	public void disconnect() {
 		if ( ! disconnected )
 		try {			
-			System.err.println( addr.getHostName() + " disconnected" );
+			System.out.println( addr.getHostName() + " disconnected (UserNic = " + userNic + ")");
 			unregister();
 			os.close();
 			is.close();
@@ -446,7 +447,7 @@ class ServerClientHandler extends Thread {
 			if ( userNic == null ) {
 				userNic = nic;
 				userFullName = name;
-				System.err.println("User \'"+ name+ "\' registered as \'"+ nic + "\'");
+				System.out.println("User \'"+ name+ "\' registered as \'"+ nic + "\'");
 			}
 		}
 		return old;
