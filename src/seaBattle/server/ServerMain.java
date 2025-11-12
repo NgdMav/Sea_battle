@@ -22,10 +22,12 @@ import seaBattle.protocol.messages.messages.MessageUser;
 import seaBattle.protocol.messages.messagesRequest.MessageChallengeRequest;
 import seaBattle.protocol.messages.messagesRequest.MessageForfeit;
 import seaBattle.protocol.messages.messagesRequest.MessageGameStart;
+import seaBattle.protocol.messages.messagesRequest.MessageGetField;
 import seaBattle.protocol.messages.messagesRequest.MessageMove;
 import seaBattle.protocol.messages.messagesRequest.MessagePlaceShips;
 import seaBattle.protocol.messages.messagesRequest.MessageReadyToPlay;
 import seaBattle.protocol.messages.messagesResponse.MessageChallengeResponse;
+import seaBattle.protocol.messages.messagesResponse.MessageGetFieldResult;
 import seaBattle.protocol.messages.messagesResult.MessageChallengeResult;
 import seaBattle.protocol.messages.messagesResult.MessageConnectResult;
 import seaBattle.protocol.messages.messagesResult.MessageError;
@@ -398,7 +400,12 @@ class ServerClientHandler extends Thread {
 						enemy.sendMessage(new MessageGameOver(true, "Game over", msgforfeit.getSessionId(), enemy.userNic));
 
 						break;	
-										
+
+					case Protocol.CMD_GET_FIELD:
+						MessageGetField msggetf = (MessageGetField) msg;
+						session = ServerMain.getSession(msggetf.getSessionId());
+						int[][] field = session.getField(msggetf.getFrom());
+						sendMessage(new MessageGetFieldResult(field));
 				}
 			}	
 		} catch (IOException e) {

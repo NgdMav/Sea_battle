@@ -111,4 +111,15 @@ public class GameSession {
         }
         return "";
     }
+
+    public int[][] getField(String nic) {
+        if (A.getNic() == nic) {
+            return A.getField();
+        }
+        else if (B.getNic() == nic) {
+            return B.getField();
+        }
+        
+        return null;
+    }
 }
