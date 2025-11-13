@@ -14,19 +14,17 @@ public class GameSession {
 
     private String currentTurnNic;
 
-
-    public GameSession(long sessionId, String playerANic, String playerBNic, List<Ship> playerAShips, List<Ship> playerBShips) {
+    public GameSession(long sessionId, String playerANic, String playerBNic, List<Ship> playerAShips,
+            List<Ship> playerBShips) {
         this.sessionId = sessionId;
         if (playerAShips == null) {
             A = new Player(playerANic);
-        }
-        else {
+        } else {
             A = new Player(playerANic, playerAShips);
         }
         if (playerBShips == null) {
             B = new Player(playerBNic);
-        }
-        else {
+        } else {
             B = new Player(playerBNic, playerBShips);
         }
         gameRuns = false;
@@ -68,7 +66,7 @@ public class GameSession {
         }
         if (A.getNic().equals(nic)) {
             A.setPlaceShips(ships);
-        } else if(B.getNic().equals(nic)) {
+        } else if (B.getNic().equals(nic)) {
             B.setPlaceShips(ships);
         } else {
             // throw ex;
@@ -80,7 +78,7 @@ public class GameSession {
     public synchronized boolean playerReady(String nic) {
         if (A.getNic().equals(nic)) {
             aready = true;
-        } else if(B.getNic().equals(nic)) {
+        } else if (B.getNic().equals(nic)) {
             bready = true;
         } else {
             // throw ex;
@@ -93,7 +91,8 @@ public class GameSession {
     }
 
     public synchronized MoveResult move(String nic, int x, int y) {
-        if (!gameRuns) throw new IllegalStateException("Game not started yet!");
+        if (!gameRuns)
+            throw new IllegalStateException("Game not started yet!");
         if (!nic.equals(currentTurnNic)) {
             throw new IllegalStateException("Not your turn, " + nic);
         }
@@ -101,11 +100,9 @@ public class GameSession {
         MoveResult res;
         if (A.getNic().equals(nic)) {
             res = B.move(x, y);
-        }
-        else if (B.getNic().equals(nic)){
+        } else if (B.getNic().equals(nic)) {
             res = A.move(x, y);
-        }
-        else {
+        } else {
             res = A.new MoveResult(false, false, false, new int[12][12]);
         }
 
@@ -135,8 +132,7 @@ public class GameSession {
     public int[][] getField(String nic) {
         if (A.getNic().equals(nic)) {
             return A.getField();
-        }
-        else if (B.getNic().equals(nic)) {
+        } else if (B.getNic().equals(nic)) {
             return B.getField();
         }
 
