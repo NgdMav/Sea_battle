@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import seaBattle.gameLogic.GameSession;
 import seaBattle.gameLogic.Player.MoveResult;
 import seaBattle.protocol.Protocol;
-import seaBattle.protocol.cmd.CmdHandler;
 import seaBattle.protocol.cmd.CommandThread;
 import seaBattle.protocol.messages.Message;
 import seaBattle.protocol.messages.messages.MessageChallenge;
@@ -44,7 +43,7 @@ public class ServerMain {
 	public static void main(String[] args) {
 
 		try ( ServerSocket serv = new ServerSocket( Protocol.PORT  )) {
-			System.out.println("initialized");
+			ServerMain.log("SERVER", "Initialized");
 			ServerStopThread tester = new ServerStopThread();
 			tester.start();
 			while (true) {
@@ -52,13 +51,13 @@ public class ServerMain {
 				if ( sock != null ) {
 					if ( ServerMain.getNumUsers() < ServerMain.MAX_USERS )
 					{
-						System.out.println( sock.getInetAddress().getHostName() + " connected" );
+						ServerMain.log("CONNECT", sock.getInetAddress().getHostName() + " connected");
 						ServerClientHandler server = new ServerClientHandler(sock);
 						server.start();
 					}
 					else
 					{
-						System.out.println( sock.getInetAddress().getHostName() + " connection rejected" );
+						ServerMain.log("CONNECT", sock.getInetAddress().getHostName() + " connection rejected");
 						sock.close();
 					}
 				} 
@@ -70,7 +69,7 @@ public class ServerMain {
 			System.err.println(e);
 		} finally {
 			stopAllUsers();
-			System.out.println("stopped");	
+			ServerMain.log("SERVER", "stopped");
 		}
 		try {
 			Thread.sleep(1000);
@@ -225,49 +224,106 @@ public class ServerMain {
 	public static long nextChallengeId() {
 		return ++challengeId;
 	}
+
+	public static void log(String tag, String msg) {
+		System.out.printf("[%tT] [%s] %s%n", System.currentTimeMillis(), tag, msg);
+	}
+
+	public static void printUsers() {
+		String[] users = getUsers();
+		log("ADMIN", "Connected users: " + users.length);
+		for (String u : users) {
+			log("USER", " - " + u);
+		}
+	}
+
+	public static void printSessions() {
+		Object[] sessions = getSessions();
+		log("ADMIN", "Active game sessions: " + sessions.length);
+		for (Object s : sessions) {
+			GameSession session = getSession((Long) s);
+			if (session != null)
+				log("SESSION", "ID=" + s + " | " + session.getPlayerA().getNic() + " vs " + session.getPlayerB().getNic());
+		}
+	}
+
+	public static void printChallenges() {
+		synchronized (syncChallenges) {
+			log("ADMIN", "Active challenges: " + challenges.size());
+			for (Challenge ch : challenges.values()) {
+				log("CHALLENGE", "ID=" + ch.getId() + " | " + ch.getFromNic() + " → " + ch.getToNic());
+			}
+		}
+	}
+
+	public static void printServerInfo() {
+		log("INFO", String.format("Users: %d | Sessions: %d | Challenges: %d",
+				getNumUsers(), getNumSessions(), challenges.size()));
+	}
 }
 
 class ServerStopThread extends CommandThread {
 	
-	static final String cmd  = "q";
-	static final String cmdL = "quit";
+	static final String CMD_QUIT  = "q";
+	static final String CMD_QUIT_LONG = "quit";
 	
-	Scanner fin; 
+	private final Scanner fin;
 	
 	public ServerStopThread() {		
 		fin = new Scanner( System.in );
 		ServerMain.setStopFlag( false );
-		putHandler ( cmd, cmdL, new CmdHandler() {
-			@Override
-			public boolean onCommand(int[] errorCode) {	return onCmdQuit(); }				
-		});
+		putHandler ( CMD_QUIT, CMD_QUIT_LONG, errorCode -> onCmdQuit());
 		this.setDaemon(true);
-		System.err.println( "Enter \'" + cmd + "\' or \'" + cmdL + "\' to stop server\n" );
+		log("Admin console ready. Commands: users | sessions | challenges | info | quit");
 	}
 	
+	@Override
 	public void run() {
-		
 		while (true) {			
 			try {
-				Thread.sleep( 1000 );
+				Thread.sleep( 500 );
 			} catch (InterruptedException e) {
 				break;
 			}
-			if ( fin.hasNextLine()== false )
-				continue;
-			String str = fin.nextLine();
-			if ( command( str )) {
-				break;
-			}
+
+			if (!fin.hasNextLine()) continue;
+            String cmd = fin.nextLine().trim().toLowerCase();
+            if (cmd.isEmpty()) continue;
+
+            switch (cmd) {
+                case "q":
+                case "quit":
+                    if (onCmdQuit()) return;
+                    break;
+                case "users":
+                    ServerMain.printUsers();
+                    break;
+                case "sessions":
+                    ServerMain.printSessions();
+                    break;
+                case "challenges":
+                    ServerMain.printChallenges();
+                    break;
+                case "info":
+                    ServerMain.printServerInfo();
+                    break;
+                default:
+                    log("Unknown command: " + cmd);
+            }
 		}
 	}
 	
-	public boolean onCmdQuit() {
-		System.err.print("stop server...");
-		fin.close();
-		ServerMain.setStopFlag( true );
-		return true;
-	}
+	
+    public boolean onCmdQuit() {
+        log("Stopping server...");
+        fin.close();
+        ServerMain.setStopFlag(true);
+        return true;
+    }
+
+    private void log(String msg) {
+        System.out.printf("[%tT] [ADMIN] %s%n", System.currentTimeMillis(), msg);
+    }
 }
 
 class ServerClientHandler extends Thread {
@@ -325,7 +381,7 @@ class ServerClientHandler extends Thread {
 							Challenge ch = new Challenge(cid, userNic, challenge.getToNic());
 							ServerMain.registerChallenge(ch);
 							target.sendMessage(new MessageChallengeRequest(userNic, cid));
-							System.out.println("Challenge created: " + cid + " " + userNic + " → " + challenge.getToNic());
+							ServerMain.log("CHALLENGE", "Created: " + cid + " " + userNic + " - " + challenge.getToNic());
 						} else {
 							os.writeObject(new MessageError("Target player not found"));
 						}
@@ -354,7 +410,7 @@ class ServerClientHandler extends Thread {
 							initiator.sendMessage(new MessageGameStart("Server", sessionId, userNic, true));
 							sendMessage(new MessageGameStart("Server", sessionId, initiator.userNic, false));
 
-							System.out.println("Game session started: " + sessionId);
+							ServerMain.log("GAME SESSION", "Started: " + sessionId);
 						} else {
 							initiator.sendMessage(new MessageChallengeResult(false, "Challenge declined by " + ch.getToNic(), ch.getId()));
 						}
@@ -423,7 +479,7 @@ class ServerClientHandler extends Thread {
 				}
 			}	
 		} catch (IOException e) {
-			System.out.print("Disconnect...");
+			ServerMain.log("USER", "Disconnect...");
 		} finally {
 			disconnect();
 		}
@@ -433,9 +489,9 @@ class ServerClientHandler extends Thread {
 		try {
 			os.writeObject(msg);
 			os.flush();
-			System.out.println("Massege send to " + userNic + " (type = " + msg.getClass().toString() + ")");
+			ServerMain.log("MESSAGE", "Send to " + userNic + " (type = " + msg.getClass().toString() + ")");
 		} catch (IOException e) {
-			System.err.println("Error sending to " + userNic + ": " + e.getMessage());
+			ServerMain.log("MESSAGE", "Error sending to " + userNic + ": " + e.getMessage());
 		}
 	}
 
@@ -465,7 +521,7 @@ class ServerClientHandler extends Thread {
 	public void disconnect() {
 		if ( ! disconnected )
 		try {			
-			System.out.println( addr.getHostName() + " disconnected (UserNic = " + userNic + ")");
+			ServerMain.log("USER", addr.getHostName() + " disconnected (UserNic = " + userNic + ")");
 			unregister();
 			os.close();
 			is.close();
@@ -491,7 +547,7 @@ class ServerClientHandler extends Thread {
 			if ( userNic == null ) {
 				userNic = nic;
 				userFullName = name;
-				System.out.println("User \'"+ name+ "\' registered as \'"+ nic + "\'");
+				ServerMain.log("USER", "User \'"+ name+ "\' registered as \'"+ nic + "\'");
 			}
 		}
 		return old;
