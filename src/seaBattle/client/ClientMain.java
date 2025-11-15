@@ -210,7 +210,7 @@ public class ClientMain {
 
 	static void showHint(Session ses) {
 		System.out.println("\n--- COMMAND HINT ---");
-		
+
 		if (ses.currentSessionId == null) {
 			System.out.println("Available commands:");
 			System.out.println("  users (u)        - Show online users");
@@ -220,7 +220,7 @@ public class ClientMain {
 			System.out.println("  quit (q)         - Exit game");
 			return;
 		}
-		
+
 		if (!ses.shipsPlaced) {
 			System.out.println("You are in a game with: " + ses.opponentNic);
 			System.out.println("Available commands:");
@@ -229,7 +229,7 @@ public class ClientMain {
 			System.out.println("  forfeit                 - Surrender the game");
 			return;
 		}
-		
+
 		if (!ses.gameStarted) {
 			System.out.println("Ships placed! Waiting for opponent...");
 			System.out.println("Available commands:");
@@ -238,7 +238,7 @@ public class ClientMain {
 			System.out.println("  forfeit         - Surrender the game");
 			return;
 		}
-		
+
 		if (ses.myTurn) {
 			System.out.println("*** YOUR TURN ***");
 			System.out.println("Make a move: move x y");
@@ -247,7 +247,7 @@ public class ClientMain {
 			System.out.println("Opponent's turn... Waiting for their move");
 			System.out.println("You can use: get_field (gf) - to view your field");
 		}
-		
+
 		System.out.println("\nCommon commands:");
 		System.out.println("  get_field (gf)  - View your field");
 		System.out.println("  forfeit         - Surrender the game");
@@ -427,7 +427,7 @@ public class ClientMain {
 	}
 
 	static List<Ship> randomShips() {
-		int[][] field = new int[12][12];  // Поле 12x12 (индексы 0-11), игровое поле 1-10
+		int[][] field = new int[12][12]; // Поле 12x12 (индексы 0-11), игровое поле 1-10
 		List<Ship> result = new ArrayList<>();
 
 		int[] sizes = { 4, 3, 3, 2, 2, 2, 1, 1, 1, 1 };
@@ -437,14 +437,14 @@ public class ClientMain {
 
 			for (int attempt = 0; attempt < 1000 && !placed; attempt++) {
 				boolean vert = Math.random() < 0.5;
-				
+
 				int maxX = vert ? 10 : 10 - len + 1;
 				int maxY = vert ? 10 - len + 1 : 10;
-				
+
 				if (maxX < 1 || maxY < 1) {
 					continue;
 				}
-				
+
 				int x = 1 + (int) (Math.random() * maxX);
 				int y = 1 + (int) (Math.random() * maxY);
 
@@ -478,9 +478,11 @@ public class ClientMain {
 		boolean vert = s.getOrientation() == Ship.Orientation.vertical;
 
 		if (vert) {
-			if (y + len - 1 > 10) return false;
+			if (y + len - 1 > 10)
+				return false;
 		} else {
-			if (x + len - 1 > 10) return false;
+			if (x + len - 1 > 10)
+				return false;
 		}
 
 		for (int i = 0; i < len; i++) {
@@ -496,7 +498,7 @@ public class ClientMain {
 				for (int dy = -1; dy <= 1; dy++) {
 					int nx = cx + dx;
 					int ny = cy + dy;
-					
+
 					// Проверяем только клетки в пределах игрового поля (1-10)
 					if (nx >= 1 && nx <= 10 && ny >= 1 && ny <= 10) {
 						if (field[nx][ny] != 0) {
@@ -519,7 +521,7 @@ public class ClientMain {
 		for (int i = 0; i < len; i++) {
 			int cx = x + (vert ? 0 : i);
 			int cy = y + (vert ? i : 0);
-			
+
 			// Убеждаемся, что координаты в пределах игрового поля
 			if (cx >= 1 && cx <= 10 && cy >= 1 && cy <= 10) {
 				field[cx][cy] = 1;
@@ -651,13 +653,12 @@ class ClientReceiver extends Thread {
 				System.out.println("\n=== GAME READY ===");
 				session.gameStarted = true;
 				session.currentSessionId = ((MessageReadyToPlay) msg).getSessionId();
-				
+
 				String toStart = ((MessageReadyToPlay) msg).getFrom();
 				// System.out.println(toStart);
 				if (session.userNic.equals(toStart)) {
 					session.myTurn = true;
-				}
-				else {
+				} else {
 					session.myTurn = false;
 				}
 				break;
@@ -682,7 +683,7 @@ class ClientReceiver extends Thread {
 						break;
 					}
 
-					session.myTurn = move.getHitted();  // Если попали - ходим еще раз
+					session.myTurn = move.getHitted(); // Если попали - ходим еще раз
 
 					if (move.getEnemyField() != null) {
 						System.out.println("\nEnemy field after your move:");

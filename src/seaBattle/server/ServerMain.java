@@ -133,7 +133,7 @@ public class ServerMain {
 	public static ServerClientHandler setUser(String userNic, ServerClientHandler user) {
 		synchronized (ServerMain.syncUsers) {
 			if (user == null) {
-				return ServerMain.users.remove(userNic);  // Используйте remove вместо put
+				return ServerMain.users.remove(userNic); // Используйте remove вместо put
 			} else {
 				return ServerMain.users.put(userNic, user);
 			}
@@ -367,8 +367,9 @@ class ServerClientHandler extends Thread {
 					ServerMain.log("USER", "Invalid message from " + userNic + ": " + e.getMessage());
 					continue;
 				}
-				
-				if (msg == null) continue;
+
+				if (msg == null)
+					continue;
 				if (msg != null)
 					switch (msg.getID()) {
 
@@ -469,7 +470,8 @@ class ServerClientHandler extends Thread {
 											msgmove.getY(), res.hitted, res.sunked,
 											res.gameOver, res.field));
 
-									ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(msgmove.getFrom()));
+									ServerClientHandler enemy = ServerMain
+											.getUser(session.getEnemyNic(msgmove.getFrom()));
 									enemy.sendMessage((new MessageMoveResult(true,
 											msgmove.getFrom() + " move done",
 											msgmove.getSessionId(), msgmove.getX(),
@@ -480,7 +482,8 @@ class ServerClientHandler extends Thread {
 								if (res.gameOver) {
 									sendMessage(new MessageGameOver(true, "Game over", msgmove.getSessionId(),
 											msgmove.getFrom()));
-									ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(msgmove.getFrom()));
+									ServerClientHandler enemy = ServerMain
+											.getUser(session.getEnemyNic(msgmove.getFrom()));
 									enemy.sendMessage(new MessageGameOver(true, "Game over", msgmove.getSessionId(),
 											msgmove.getFrom()));
 								}
