@@ -78,6 +78,10 @@ public class ClientMain {
 		List<Long> pendingChallenges = new ArrayList<>();
 		Long currentSessionId = null;
 
+		boolean gameStarted = false;
+		boolean myTurn = false;
+		boolean shipsPlaced = false;
+
 		Session(String nic, String name) {
 			userNic = nic;
 			userName = name;
@@ -516,7 +520,7 @@ public class ClientMain {
 class ClientReceiver extends Thread {
 
 	private final ObjectInputStream is;
-	private final ClientMain.Session session;
+	public final ClientMain.Session session;
 
 	public ClientReceiver(ObjectInputStream is, ClientMain.Session session) {
 		this.is = is;
@@ -561,6 +565,8 @@ class ClientReceiver extends Thread {
 
 				session.currentSessionId = start.getSessionId();
 				session.opponentNic = start.getOppNic();
+				session.gameStarted = false;
+				session.shipsPlaced = false;
 
 				System.out.println("\n=== GAME STARTED ===");
 				System.out.println("Session ID = " + start.getSessionId());
@@ -568,9 +574,10 @@ class ClientReceiver extends Thread {
 				System.out.println("Place ships: plsh OR plsh random");
 				break;
 
-			case Protocol.CMD_SHIP_PLACE: // результат расстановки судов
+			case Protocol.CMD_SHIP_PLACE:
 				MessagePlaceShipsResult psr = (MessagePlaceShipsResult) msg;
 				if (psr.Error()) {
+					session.shipsPlaced = true;
 					System.out.println("Ship placement failed: " + psr.getMessage());
 				} else {
 					System.out.println("Ships placed successfully!");
@@ -582,14 +589,25 @@ class ClientReceiver extends Thread {
 				MessageMoveResult move = (MessageMoveResult) msg;
 
 				System.out.println("\n=== MOVE RESULT ===");
-				System.out.println(move.getMessage());
-				System.out.println("Hit: " + move.getHitted());
-				System.out.println("Sunk: " + move.getSunked());
+
+				System.out.println("Your move at: (" + move.getX() + ", " + move.getY() + ")");
+				System.out.println("Hit: " + (move.getHitted() ? "YES" : "NO"));
+				System.out.println("Sunk: " + (move.getSunked() ? "YES" : "NO"));
 
 				if (move.getGameOver()) {
-					System.out.println("GAME OVER!");
+					System.out.println("\n*** GAME OVER ***");
+					System.out.println("Winner: " + session.userNic); // сервер может прислать winnerNic – поменяю если скажешь
+					session.myTurn = false;
+					break;
 				}
+
+				session.myTurn = !move.getHitted();
+
+				System.out.println("\nEnemy field after your move:");
+				printField(move.getEnemyField());
+
 				break;
+
 
 			case Protocol.CMD_GET_FIELD:
 				MessageGetFieldResult gf = (MessageGetFieldResult) msg;
@@ -616,16 +634,56 @@ class ClientReceiver extends Thread {
 			default:
 				System.out.println("Incoming message id=" + msg.getID());
 		}
+		showHint();
+	}
+
+	private void showHint() {
+
+		System.out.println("\n--- HINT ---");
+
+		// no session
+		if (session.currentSessionId == null) {
+			System.out.println("You are not in a game. Use: ch <nic> to challenge someone.");
+			return;
+		}
+
+		// waiting ship placement
+		if (!session.shipsPlaced) {
+			System.out.println("Place your ships: plsh  OR  plsh random");
+			return;
+		}
+
+		// waiting opponent ready
+		if (!session.myTurn && !session.gameStarted) {
+			System.out.println("Waiting for opponent to become ready...");
+			return;
+		}
+
+		// game running
+		if (session.myTurn) {
+			System.out.println("It's YOUR TURN! Make a move: move x y");
+		} else {
+			System.out.println("Opponent's turn. Wait...");
+		}
 	}
 
 	static void printField(int[][] f) {
+		if (f == null) {
+			System.out.println("(no field data)");
+			return;
+		}
+
+		System.out.println("    1 2 3 4 5 6 7 8 9 10");
+		System.out.println("   ----------------------");
+
 		for (int y = 1; y <= 10; y++) {
+			System.out.printf("%2d | ", y);
 			for (int x = 1; x <= 10; x++) {
 				int v = f[x][y];
 				char c = switch (v) {
-					case Player.SHIP -> '■'; // ship
-					case Player.HITTED -> '×'; // hit
-					case Player.MISS -> '•'; // miss
+					case Player.SHIP -> '#'; // ship
+					case Player.HITTED -> 'X'; // hit
+					case Player.MISS -> 'o'; // miss
 					default -> '.';
 				};
 				System.out.print(c + " ");
