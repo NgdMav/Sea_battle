@@ -86,8 +86,9 @@ public class GameSession {
         }
         if (aready && bready) {
             gameStart();
+            return true;
         }
-        return true;
+        return false;
     }
 
     public synchronized MoveResult move(String nic, int x, int y) {
@@ -107,7 +108,9 @@ public class GameSession {
         }
 
         if (!res.gameOver) {
-            currentTurnNic = getEnemyNic(nic);
+            if (!res.hitted) {
+                currentTurnNic = getEnemyNic(nic);
+            }
         } else {
             gameEnd();
         }

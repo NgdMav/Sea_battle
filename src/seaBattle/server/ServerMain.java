@@ -132,11 +132,11 @@ public class ServerMain {
 
 	public static ServerClientHandler setUser(String userNic, ServerClientHandler user) {
 		synchronized (ServerMain.syncUsers) {
-			ServerClientHandler res = ServerMain.users.put(userNic, user);
 			if (user == null) {
-				ServerMain.users.remove(userNic);
+				return ServerMain.users.remove(userNic);  // Используйте remove вместо put
+			} else {
+				return ServerMain.users.put(userNic, user);
 			}
-			return res;
 		}
 	}
 
@@ -341,7 +341,7 @@ class ServerClientHandler extends Thread {
 
 	public ServerClientHandler(Socket s) throws IOException {
 		sock = s;
-		s.setSoTimeout(1000);
+		// s.setSoTimeout(1000);
 		os = new ObjectOutputStream(s.getOutputStream());
 		is = new ObjectInputStream(s.getInputStream());
 		addr = s.getInetAddress();
@@ -354,9 +354,21 @@ class ServerClientHandler extends Thread {
 				Message msg = null;
 				try {
 					msg = (Message) is.readObject();
+				} catch (java.io.EOFException e) {
+					break;
+				} catch (SocketException e) {
+					break;
 				} catch (IOException e) {
+					if (!sock.isClosed()) {
+						ServerMain.log("USER", "IO error for " + userNic + ": " + e.getMessage());
+					}
+					break;
 				} catch (ClassNotFoundException e) {
+					ServerMain.log("USER", "Invalid message from " + userNic + ": " + e.getMessage());
+					continue;
 				}
+				
+				if (msg == null) continue;
 				if (msg != null)
 					switch (msg.getID()) {
 
@@ -390,6 +402,7 @@ class ServerClientHandler extends Thread {
 							} else {
 								os.writeObject(new MessageError("Target player not found"));
 							}
+							break;
 
 						case Protocol.CMD_CHALLENGE_RESPONSE:
 							MessageChallengeResponse resp = (MessageChallengeResponse) msg;
@@ -435,7 +448,12 @@ class ServerClientHandler extends Thread {
 						case Protocol.CMD_READY:
 							MessageReadyToPlay mready = (MessageReadyToPlay) msg;
 							session = ServerMain.getSession(mready.getSessionId());
-							session.playerReady(mready.getFrom());
+							boolean start = session.playerReady(mready.getFrom());
+							if (start) {
+								sendMessage(msg);
+								ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(mready.getFrom()));
+								enemy.sendMessage(msg);
+							}
 							break;
 
 						case Protocol.CMD_MOVE:
@@ -490,7 +508,7 @@ class ServerClientHandler extends Thread {
 					}
 			}
 		} catch (IOException e) {
-			ServerMain.log("USER", "Disconnect...");
+			ServerMain.log("USER", "Unexpected error for " + userNic + ": " + e.getMessage());
 		} finally {
 			disconnect();
 		}

@@ -13,11 +13,12 @@ interface CMD {
 	static final byte CMD_GAME_STARTS = 10;
 	static final byte CMD_SHIP_PLACE = 11;
 	static final byte CMD_MOVE = 12;
-	static final byte CMD_GAMEOVER = 13;
-	static final byte CMD_FORFEIT = 14;
-	static final byte CMD_ERROR = 15;
-	static final byte CMD_READY = 16;
-	static final byte CMD_GET_FIELD = 17;
+	static final byte CMD_OPPONENT_MOVE = 13;
+	static final byte CMD_GAMEOVER = 14;
+	static final byte CMD_FORFEIT = 15;
+	static final byte CMD_ERROR = 16;
+	static final byte CMD_READY = 17;
+	static final byte CMD_GET_FIELD = 18;
 }
 
 interface RESULT {

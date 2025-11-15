@@ -14,7 +14,6 @@ import seaBattle.gameLogic.Player;
 import seaBattle.gameLogic.Ship;
 import seaBattle.protocol.Protocol;
 import seaBattle.protocol.messages.Message;
-import seaBattle.protocol.messages.MessageResult;
 import seaBattle.protocol.messages.messages.MessageChallenge;
 import seaBattle.protocol.messages.messages.MessageConnect;
 import seaBattle.protocol.messages.messages.MessageDisconnect;
@@ -137,7 +136,7 @@ public class ClientMain {
 
 	static Message getCommand(Session ses, Scanner in) {
 		while (true) {
-			// printPrompt();
+			printPrompt(ses);
 			if (!in.hasNextLine())
 				break;
 			String str = in.nextLine();
@@ -200,10 +199,58 @@ public class ClientMain {
 		return (r == null ? 0 : r.byteValue());
 	}
 
-	static void printPrompt() {
+	static void printPrompt(Session ses) {
 		System.out.println();
-		System.out.print("(q)uit/(m)ail/(u)sers/(l)etter >");
+		System.out.println("==========================================");
+		showHint(ses);
+		System.out.println("==========================================");
+		System.out.print("Enter command > ");
 		System.out.flush();
+	}
+
+	static void showHint(Session ses) {
+		System.out.println("\n--- COMMAND HINT ---");
+		
+		if (ses.currentSessionId == null) {
+			System.out.println("Available commands:");
+			System.out.println("  users (u)        - Show online users");
+			System.out.println("  challenge (ch)   - Challenge another player");
+			System.out.println("  a2ch             - Answer to challenge");
+			System.out.println("  ping             - Test connection");
+			System.out.println("  quit (q)         - Exit game");
+			return;
+		}
+		
+		if (!ses.shipsPlaced) {
+			System.out.println("You are in a game with: " + ses.opponentNic);
+			System.out.println("Available commands:");
+			System.out.println("  place_ships (plsh)      - Place your ships manually");
+			System.out.println("  place_ships random      - Place ships randomly");
+			System.out.println("  forfeit                 - Surrender the game");
+			return;
+		}
+		
+		if (!ses.gameStarted) {
+			System.out.println("Ships placed! Waiting for opponent...");
+			System.out.println("Available commands:");
+			System.out.println("  ready           - Confirm you are ready to play");
+			System.out.println("  get_field (gf)  - View your field");
+			System.out.println("  forfeit         - Surrender the game");
+			return;
+		}
+		
+		if (ses.myTurn) {
+			System.out.println("*** YOUR TURN ***");
+			System.out.println("Make a move: move x y");
+			System.out.println("Example: move 5 3");
+		} else {
+			System.out.println("Opponent's turn... Waiting for their move");
+			System.out.println("You can use: get_field (gf) - to view your field");
+		}
+		
+		System.out.println("\nCommon commands:");
+		System.out.println("  get_field (gf)  - View your field");
+		System.out.println("  forfeit         - Surrender the game");
 	}
 
 	static boolean processCommand(Session ses, Message msg,
@@ -211,19 +258,6 @@ public class ClientMain {
 			throws IOException, ClassNotFoundException {
 		if (msg != null) {
 			os.writeObject(msg);
-			MessageResult res = (MessageResult) is.readObject();
-			if (res.Error()) {
-				System.err.println(res.getMessage());
-			} else {
-				switch (res.getID()) {
-					case Protocol.CMD_USER:
-						printUsers((MessageUserResult) res);
-						break;
-					default:
-						assert (false);
-						break;
-				}
-			}
 			return true;
 		}
 		return false;
@@ -577,37 +611,84 @@ class ClientReceiver extends Thread {
 			case Protocol.CMD_SHIP_PLACE:
 				MessagePlaceShipsResult psr = (MessagePlaceShipsResult) msg;
 				if (psr.Error()) {
-					session.shipsPlaced = true;
+					session.shipsPlaced = false;
 					System.out.println("Ship placement failed: " + psr.getMessage());
 				} else {
+					session.shipsPlaced = true;
 					System.out.println("Ships placed successfully!");
 					System.out.println("Write 'ready' when finished.");
 				}
 				break;
 
-			case Protocol.CMD_MOVE:
-				MessageMoveResult move = (MessageMoveResult) msg;
-
-				System.out.println("\n=== MOVE RESULT ===");
-
-				System.out.println("Your move at: (" + move.getX() + ", " + move.getY() + ")");
-				System.out.println("Hit: " + (move.getHitted() ? "YES" : "NO"));
-				System.out.println("Sunk: " + (move.getSunked() ? "YES" : "NO"));
-
-				if (move.getGameOver()) {
-					System.out.println("\n*** GAME OVER ***");
-					System.out.println("Winner: " + session.userNic); // сервер может прислать winnerNic – поменяю если скажешь
-					session.myTurn = false;
-					break;
-				}
-
-				session.myTurn = !move.getHitted();
-
-				System.out.println("\nEnemy field after your move:");
-				printField(move.getEnemyField());
+			case Protocol.CMD_READY:
+				// Уведомление о том, что противник готов
+				System.out.println("\n=== GAME READY ===");
+				session.gameStarted = true;
 
 				break;
 
+			case Protocol.CMD_MOVE:
+				MessageMoveResult move = (MessageMoveResult) msg;
+
+				boolean isOurMove = move.getMessage().contains(session.userNic);
+
+				if (isOurMove) {
+					System.out.println("\n=== MOVE RESULT ===");
+					System.out.println("Your move at: (" + move.getX() + ", " + move.getY() + ")");
+					System.out.println("Hit: " + (move.getHitted() ? "YES" : "NO"));
+					System.out.println("Sunk: " + (move.getSunked() ? "YES" : "NO"));
+
+					if (move.getGameOver()) {
+						System.out.println("\n*** GAME OVER ***");
+						System.out.println("Winner: " + session.userNic);
+						session.myTurn = false;
+						session.gameStarted = false;
+						break;
+					}
+
+					session.myTurn = !move.getHitted();  // Если попали - ходим еще раз
+
+					if (move.getEnemyField() != null) {
+						System.out.println("\nEnemy field after your move:");
+						printField(move.getEnemyField());
+					}
+				} else {
+					// Ход противника
+					System.out.println("\n=== OPPONENT'S MOVE ===");
+					System.out.println("Opponent moved at: (" + move.getX() + ", " + move.getY() + ")");
+					System.out.println("Hit: " + (move.getHitted() ? "YES" : "NO"));
+					System.out.println("Sunk: " + (move.getSunked() ? "YES" : "NO"));
+
+					if (move.getGameOver()) {
+						System.out.println("\n*** GAME OVER ***");
+						System.out.println("Winner: " + session.opponentNic);
+						session.myTurn = false;
+						session.gameStarted = false;
+					} else {
+						session.myTurn = true;  // После хода противника - наш ход
+						System.out.println("It's your turn now! Use: move x y");
+					}
+				}
+				break;
+
+			case Protocol.CMD_OPPONENT_MOVE:
+				// Ход противника
+				MessageMoveResult opponentMove = (MessageMoveResult) msg;
+				System.out.println("\n=== OPPONENT'S MOVE ===");
+				System.out.println("Opponent moved at: (" + opponentMove.getX() + ", " + opponentMove.getY() + ")");
+				System.out.println("Hit: " + (opponentMove.getHitted() ? "YES" : "NO"));
+				System.out.println("Sunk: " + (opponentMove.getSunked() ? "YES" : "NO"));
+
+				if (opponentMove.getGameOver()) {
+					System.out.println("\n*** GAME OVER ***");
+					System.out.println("Winner: " + session.opponentNic);
+					session.myTurn = false;
+					session.currentSessionId = null;
+				} else {
+					session.myTurn = true; // Теперь ваш ход
+					System.out.println("It's your turn now! Use: move x y");
+				}
+				break;
 
 			case Protocol.CMD_GET_FIELD:
 				MessageGetFieldResult gf = (MessageGetFieldResult) msg;
@@ -619,11 +700,60 @@ class ClientReceiver extends Thread {
 				MessageGameOver over = (MessageGameOver) msg;
 				System.out.println("\n=== GAME OVER ===");
 				System.out.println("Winner: " + over.getWinnerNic());
+				if (over.getWinnerNic().equals(session.userNic)) {
+					System.out.println("Congratulations! You won!");
+				} else {
+					System.out.println("You lost. Better luck next time!");
+				}
 				session.currentSessionId = null;
+				session.gameStarted = false;
+				session.shipsPlaced = false;
+				session.myTurn = false;
 				break;
 
 			case Protocol.CMD_PONG:
-				System.out.println("[PING RECEIVED]");
+				System.out.println("[PONG RECEIVED]");
+				break;
+
+			case Protocol.CMD_USER:
+				// Ответ на запрос списка пользователей
+				MessageUserResult userResult = (MessageUserResult) msg;
+				if (userResult.Error()) {
+					System.out.println("Error getting users: " + userResult.getMessage());
+				} else {
+					System.out.println("\n=== ONLINE USERS ===");
+					if (userResult.getNics() != null && userResult.getNics().length > 0) {
+						for (String user : userResult.getNics()) {
+							System.out.println(" - " + user);
+						}
+					} else {
+						System.out.println("No other users online");
+					}
+				}
+				break;
+
+			case Protocol.CMD_CONNECT:
+				MessageConnectResult connectResult = (MessageConnectResult) msg;
+				if (connectResult.Error()) {
+					System.out.println("Connection error: " + connectResult.getMessage());
+					session.connected = false;
+				}
+				break;
+
+			case Protocol.CMD_DISCONNECT:
+				System.out.println("\n=== DISCONNECTED ===");
+				System.out.println("Server disconnected");
+				session.connected = false;
+				break;
+
+			case Protocol.CMD_FORFEIT:
+				System.out.println("\n=== OPPONENT FORFEITED ===");
+				System.out.println("Your opponent has forfeited the game!");
+				System.out.println("You win!");
+				session.currentSessionId = null;
+				session.gameStarted = false;
+				session.shipsPlaced = false;
+				session.myTurn = false;
 				break;
 
 			case Protocol.CMD_ERROR:
@@ -641,29 +771,39 @@ class ClientReceiver extends Thread {
 
 		System.out.println("\n--- HINT ---");
 
-		// no session
+		if (!session.connected) {
+			System.out.println("Disconnected from server");
+			return;
+		}
+
+		// Нет активной сессии
 		if (session.currentSessionId == null) {
 			System.out.println("You are not in a game. Use: ch <nic> to challenge someone.");
+			System.out.println("Available: users, challenge, ping, quit");
 			return;
 		}
 
-		// waiting ship placement
+		// Есть сессия, но корабли не размещены
 		if (!session.shipsPlaced) {
-			System.out.println("Place your ships: plsh  OR  plsh random");
+			System.out.println("Place your ships: plsh OR plsh random");
+			System.out.println("Available: plsh, plsh random, forfeit");
 			return;
 		}
 
-		// waiting opponent ready
-		if (!session.myTurn && !session.gameStarted) {
-			System.out.println("Waiting for opponent to become ready...");
+		// Корабли размещены, но игра не началась (не готовы)
+		if (!session.gameStarted) {
+			System.out.println("Ships placed! Type 'ready' when you're ready to play.");
+			System.out.println("Available: ready, get_field, forfeit");
 			return;
 		}
 
-		// game running
+		// Игра активна
 		if (session.myTurn) {
 			System.out.println("It's YOUR TURN! Make a move: move x y");
+			System.out.println("Available: move, get_field, forfeit");
 		} else {
-			System.out.println("Opponent's turn. Wait...");
+			System.out.println("Opponent's turn. Wait for their move...");
+			System.out.println("Available: get_field, forfeit");
 		}
 	}
 
@@ -679,7 +819,7 @@ class ClientReceiver extends Thread {
 		for (int y = 1; y <= 10; y++) {
 			System.out.printf("%2d | ", y);
 			for (int x = 1; x <= 10; x++) {
-				int v = f[x][y];
+				int v = f[y][x];
 				char c = switch (v) {
 					case Player.SHIP -> '#'; // ship
 					case Player.HITTED -> 'X'; // hit

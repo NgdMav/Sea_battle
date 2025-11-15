@@ -25,6 +25,17 @@ public class MessageMoveResult extends MessageResult {
         this.gameOver = gameOver;
         this.enemyField = enemyField;
     }
+    
+    public MessageMoveResult(byte id, boolean isGood, String message, long sessionId, int x, int y, boolean hitted, boolean sunked, boolean gameOver, int[][] enemyField) {
+		super(id, isGood, message);
+        this.sessionId = sessionId;
+        this.x = x;
+        this.y = y;
+        this.hitted = hitted;
+        this.sunked = sunked;
+        this.gameOver = gameOver;
+        this.enemyField = enemyField;
+    }
 
     public long getSessionId() {
         return sessionId;
