@@ -33,7 +33,7 @@ public class Player implements Field {
         field = createField(ships);
     }
 
-    public boolean checkShips(List<Ship> ships) {
+    public static boolean checkShips(List<Ship> ships) {
         int[][] f = new int[12][12];
         for (int i = 0; i < 12; i++) {
             for (int j = 0; j < 12; j++) {
