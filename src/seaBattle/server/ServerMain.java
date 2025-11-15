@@ -450,9 +450,9 @@ class ServerClientHandler extends Thread {
 							session = ServerMain.getSession(mready.getSessionId());
 							boolean start = session.playerReady(mready.getFrom());
 							if (start) {
-								sendMessage(msg);
+								sendMessage(new MessageReadyToPlay(session.getToStart(), session.getSessionId()));
 								ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(mready.getFrom()));
-								enemy.sendMessage(msg);
+								enemy.sendMessage(new MessageReadyToPlay(session.getToStart(), session.getSessionId()));
 							}
 							break;
 

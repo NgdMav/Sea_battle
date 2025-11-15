@@ -141,4 +141,8 @@ public class GameSession {
 
         return null;
     }
+
+    public String getToStart() {
+        return currentTurnNic;
+    }
 }

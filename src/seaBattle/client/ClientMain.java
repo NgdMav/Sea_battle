@@ -624,13 +624,22 @@ class ClientReceiver extends Thread {
 				// Уведомление о том, что противник готов
 				System.out.println("\n=== GAME READY ===");
 				session.gameStarted = true;
-
+				
+				String toStart = ((MessageReadyToPlay) msg).getFrom();
+				System.out.println(toStart);
+				if (session.userNic.equals(toStart)) {
+					session.myTurn = true;
+				}
+				else {
+					session.myTurn = false;
+				}
 				break;
 
 			case Protocol.CMD_MOVE:
 				MessageMoveResult move = (MessageMoveResult) msg;
 
 				boolean isOurMove = move.getMessage().contains(session.userNic);
+				System.out.println(isOurMove);
 
 				if (isOurMove) {
 					System.out.println("\n=== MOVE RESULT ===");
@@ -646,7 +655,7 @@ class ClientReceiver extends Thread {
 						break;
 					}
 
-					session.myTurn = !move.getHitted();  // Если попали - ходим еще раз
+					session.myTurn = move.getHitted();  // Если попали - ходим еще раз
 
 					if (move.getEnemyField() != null) {
 						System.out.println("\nEnemy field after your move:");
@@ -665,7 +674,7 @@ class ClientReceiver extends Thread {
 						session.myTurn = false;
 						session.gameStarted = false;
 					} else {
-						session.myTurn = true;  // После хода противника - наш ход
+						session.myTurn = !move.getHitted();
 						System.out.println("It's your turn now! Use: move x y");
 					}
 				}
@@ -819,7 +828,7 @@ class ClientReceiver extends Thread {
 		for (int y = 1; y <= 10; y++) {
 			System.out.printf("%2d | ", y);
 			for (int x = 1; x <= 10; x++) {
-				int v = f[y][x];
+				int v = f[x][y];
 				char c = switch (v) {
 					case Player.SHIP -> '#'; // ship
 					case Player.HITTED -> 'X'; // hit
