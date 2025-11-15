@@ -187,7 +187,7 @@ public class Player implements Field {
             }
         }
 
-        gameOver = true;
+        gameOver = sunked;
         if (sunked) {
             for (int i = 0; i < field.length; i++) {
                 for (int j = 0; j < field.length; j++) {
@@ -222,7 +222,7 @@ public class Player implements Field {
                 return false;
             }
             if (field[xnew][ynew + 1] == SHIP) {
-                return true;
+                return false;
             }
 
             if (field[xnew - 1][ynew] == HITTED) {

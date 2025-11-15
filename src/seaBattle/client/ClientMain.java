@@ -427,8 +427,7 @@ public class ClientMain {
 	}
 
 	static List<Ship> randomShips() {
-
-		int[][] field = new int[12][12];
+		int[][] field = new int[12][12];  // Поле 12x12 (индексы 0-11), игровое поле 1-10
 		List<Ship> result = new ArrayList<>();
 
 		int[] sizes = { 4, 3, 3, 2, 2, 2, 1, 1, 1, 1 };
@@ -437,9 +436,17 @@ public class ClientMain {
 			boolean placed = false;
 
 			for (int attempt = 0; attempt < 1000 && !placed; attempt++) {
-				int x = 1 + (int) (Math.random() * 10);
-				int y = 1 + (int) (Math.random() * 10);
 				boolean vert = Math.random() < 0.5;
+				
+				int maxX = vert ? 10 : 10 - len + 1;
+				int maxY = vert ? 10 - len + 1 : 10;
+				
+				if (maxX < 1 || maxY < 1) {
+					continue;
+				}
+				
+				int x = 1 + (int) (Math.random() * maxX);
+				int y = 1 + (int) (Math.random() * maxY);
 
 				try {
 					Ship s = new Ship(x, y, len, vert);
@@ -452,11 +459,12 @@ public class ClientMain {
 					placed = true;
 
 				} catch (Exception ignore) {
+
 				}
 			}
 
 			if (!placed) {
-				throw new RuntimeException("Unable to place random ships");
+				throw new RuntimeException("Unable to place random ships of length " + len);
 			}
 		}
 
@@ -464,25 +472,39 @@ public class ClientMain {
 	}
 
 	static boolean canPlace(int[][] field, Ship s) {
-
 		int x = s.getX();
 		int y = s.getY();
 		int len = s.getLength();
 		boolean vert = s.getOrientation() == Ship.Orientation.vertical;
 
+		if (vert) {
+			if (y + len - 1 > 10) return false;
+		} else {
+			if (x + len - 1 > 10) return false;
+		}
+
 		for (int i = 0; i < len; i++) {
 			int cx = x + (vert ? 0 : i);
 			int cy = y + (vert ? i : 0);
 
-			for (int dx = -1; dx <= 1; dx++)
+			if (field[cx][cy] != 0) {
+				return false;
+			}
+
+			// Проверяем соседние клетки
+			for (int dx = -1; dx <= 1; dx++) {
 				for (int dy = -1; dy <= 1; dy++) {
 					int nx = cx + dx;
 					int ny = cy + dy;
+					
+					// Проверяем только клетки в пределах игрового поля (1-10)
 					if (nx >= 1 && nx <= 10 && ny >= 1 && ny <= 10) {
-						if (field[nx][ny] != 0)
+						if (field[nx][ny] != 0) {
 							return false;
+						}
 					}
 				}
+			}
 		}
 
 		return true;
@@ -497,7 +519,11 @@ public class ClientMain {
 		for (int i = 0; i < len; i++) {
 			int cx = x + (vert ? 0 : i);
 			int cy = y + (vert ? i : 0);
-			field[cx][cy] = 1;
+			
+			// Убеждаемся, что координаты в пределах игрового поля
+			if (cx >= 1 && cx <= 10 && cy >= 1 && cy <= 10) {
+				field[cx][cy] = 1;
+			}
 		}
 	}
 
@@ -624,9 +650,10 @@ class ClientReceiver extends Thread {
 				// Уведомление о том, что противник готов
 				System.out.println("\n=== GAME READY ===");
 				session.gameStarted = true;
+				session.currentSessionId = ((MessageReadyToPlay) msg).getSessionId();
 				
 				String toStart = ((MessageReadyToPlay) msg).getFrom();
-				System.out.println(toStart);
+				// System.out.println(toStart);
 				if (session.userNic.equals(toStart)) {
 					session.myTurn = true;
 				}
@@ -639,7 +666,6 @@ class ClientReceiver extends Thread {
 				MessageMoveResult move = (MessageMoveResult) msg;
 
 				boolean isOurMove = move.getMessage().contains(session.userNic);
-				System.out.println(isOurMove);
 
 				if (isOurMove) {
 					System.out.println("\n=== MOVE RESULT ===");
@@ -652,6 +678,7 @@ class ClientReceiver extends Thread {
 						System.out.println("Winner: " + session.userNic);
 						session.myTurn = false;
 						session.gameStarted = false;
+						session.currentSessionId = null;
 						break;
 					}
 
@@ -673,29 +700,11 @@ class ClientReceiver extends Thread {
 						System.out.println("Winner: " + session.opponentNic);
 						session.myTurn = false;
 						session.gameStarted = false;
+						session.currentSessionId = null;
 					} else {
 						session.myTurn = !move.getHitted();
 						System.out.println("It's your turn now! Use: move x y");
 					}
-				}
-				break;
-
-			case Protocol.CMD_OPPONENT_MOVE:
-				// Ход противника
-				MessageMoveResult opponentMove = (MessageMoveResult) msg;
-				System.out.println("\n=== OPPONENT'S MOVE ===");
-				System.out.println("Opponent moved at: (" + opponentMove.getX() + ", " + opponentMove.getY() + ")");
-				System.out.println("Hit: " + (opponentMove.getHitted() ? "YES" : "NO"));
-				System.out.println("Sunk: " + (opponentMove.getSunked() ? "YES" : "NO"));
-
-				if (opponentMove.getGameOver()) {
-					System.out.println("\n*** GAME OVER ***");
-					System.out.println("Winner: " + session.opponentNic);
-					session.myTurn = false;
-					session.currentSessionId = null;
-				} else {
-					session.myTurn = true; // Теперь ваш ход
-					System.out.println("It's your turn now! Use: move x y");
 				}
 				break;
 
@@ -706,18 +715,23 @@ class ClientReceiver extends Thread {
 				break;
 
 			case Protocol.CMD_GAMEOVER:
-				MessageGameOver over = (MessageGameOver) msg;
-				System.out.println("\n=== GAME OVER ===");
-				System.out.println("Winner: " + over.getWinnerNic());
-				if (over.getWinnerNic().equals(session.userNic)) {
-					System.out.println("Congratulations! You won!");
-				} else {
-					System.out.println("You lost. Better luck next time!");
+				try {
+					MessageGameOver over = (MessageGameOver) msg;
+					System.out.println("\n=== GAME OVER ===");
+					System.out.println("Winner: " + over.getWinnerNic());
+					if (over.getWinnerNic().equals(session.userNic)) {
+						System.out.println("Congratulations! You won!");
+					} else {
+						System.out.println("You lost. Better luck next time!");
+					}
+					// Полный сброс состояния игры
+					session.currentSessionId = null;
+					session.gameStarted = false;
+					session.shipsPlaced = false;
+					session.myTurn = false;
+				} catch (ClassCastException e) {
+					System.out.println("Error: Invalid game over message");
 				}
-				session.currentSessionId = null;
-				session.gameStarted = false;
-				session.shipsPlaced = false;
-				session.myTurn = false;
 				break;
 
 			case Protocol.CMD_PONG:

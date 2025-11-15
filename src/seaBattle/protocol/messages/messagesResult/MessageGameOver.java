@@ -11,7 +11,7 @@ public class MessageGameOver extends MessageResult{
     private String winnerNic;
 
     public MessageGameOver(boolean isGood, String message, long sessionId, String winnerNic) {
-        super(Protocol.CMD_MOVE, isGood, message);
+        super(Protocol.CMD_GAMEOVER, isGood, message);
         this.sessionId = sessionId;
         this.winnerNic = winnerNic;
     }

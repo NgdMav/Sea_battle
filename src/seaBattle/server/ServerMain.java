@@ -462,22 +462,25 @@ class ServerClientHandler extends Thread {
 							try {
 								MoveResult res = session.move(msgmove.getFrom(), msgmove.getX(), msgmove.getY());
 
-								sendMessage(new MessageMoveResult(true,
-										msgmove.getFrom() + " move done",
-										msgmove.getSessionId(), msgmove.getX(),
-										msgmove.getY(), res.hitted, res.sunked,
-										res.gameOver, res.field));
+								if (!res.gameOver) {
+									sendMessage(new MessageMoveResult(true,
+											msgmove.getFrom() + " move done",
+											msgmove.getSessionId(), msgmove.getX(),
+											msgmove.getY(), res.hitted, res.sunked,
+											res.gameOver, res.field));
 
-								ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(msgmove.getFrom()));
-								enemy.sendMessage((new MessageMoveResult(true,
-										msgmove.getFrom() + " move done",
-										msgmove.getSessionId(), msgmove.getX(),
-										msgmove.getY(), res.hitted, res.sunked,
-										res.gameOver, res.field)));
+									ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(msgmove.getFrom()));
+									enemy.sendMessage((new MessageMoveResult(true,
+											msgmove.getFrom() + " move done",
+											msgmove.getSessionId(), msgmove.getX(),
+											msgmove.getY(), res.hitted, res.sunked,
+											res.gameOver, res.field)));
+								}
 
 								if (res.gameOver) {
 									sendMessage(new MessageGameOver(true, "Game over", msgmove.getSessionId(),
 											msgmove.getFrom()));
+									ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(msgmove.getFrom()));
 									enemy.sendMessage(new MessageGameOver(true, "Game over", msgmove.getSessionId(),
 											msgmove.getFrom()));
 								}
