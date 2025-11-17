@@ -18,7 +18,7 @@ interface Field {
 
 public class Player implements Field {
     private String userNic;
-    
+
     private List<Ship> ships;
     private int[][] field;
 
@@ -26,14 +26,14 @@ public class Player implements Field {
         userNic = nic;
         field = createRandomField();
     }
-    
+
     public Player(String nic, List<Ship> ships) {
         checkShips(ships);
         userNic = nic;
         field = createField(ships);
     }
 
-    public boolean checkShips(List<Ship> ships) {
+    public static boolean checkShips(List<Ship> ships) {
         int[][] f = new int[12][12];
         for (int i = 0; i < 12; i++) {
             for (int j = 0; j < 12; j++) {
@@ -77,8 +77,7 @@ public class Player implements Field {
                 if (s.getOrientation() == Orientation.horizontal) {
                     x = s.getX() + i;
                     y = s.getY();
-                }
-                else {
+                } else {
                     x = s.getX();
                     y = s.getY() + i;
                 }
@@ -89,14 +88,14 @@ public class Player implements Field {
 
                 f[x][y] = 1;
 
-                que.add(new int[]{x - 1, y - 1});
-                que.add(new int[]{x - 1, y});
-                que.add(new int[]{x - 1, y + 1});
-                que.add(new int[]{x, y - 1});
-                que.add(new int[]{x, y + 1});
-                que.add(new int[]{x + 1, y - 1});
-                que.add(new int[]{x + 1, y});
-                que.add(new int[]{x + 1, y + 1});
+                que.add(new int[] { x - 1, y - 1 });
+                que.add(new int[] { x - 1, y });
+                que.add(new int[] { x - 1, y + 1 });
+                que.add(new int[] { x, y - 1 });
+                que.add(new int[] { x, y + 1 });
+                que.add(new int[] { x + 1, y - 1 });
+                que.add(new int[] { x + 1, y });
+                que.add(new int[] { x + 1, y + 1 });
             }
             for (int[] coord : que) {
                 f[coord[0]][coord[1]] = 1;
@@ -119,8 +118,7 @@ public class Player implements Field {
                 if (s.getOrientation() == Orientation.horizontal) {
                     x = s.getX() + i;
                     y = s.getY();
-                }
-                else {
+                } else {
                     x = s.getX();
                     y = s.getY() + i;
                 }
@@ -189,11 +187,11 @@ public class Player implements Field {
             }
         }
 
-        gameOver = true;
+        gameOver = sunked;
         if (sunked) {
             for (int i = 0; i < field.length; i++) {
                 for (int j = 0; j < field.length; j++) {
-                    if(field[i][j] == SHIP) {
+                    if (field[i][j] == SHIP) {
                         gameOver = false;
                         return new MoveResult(hitted, sunked, gameOver, getSafeField(field));
                     }
@@ -206,7 +204,7 @@ public class Player implements Field {
 
     private boolean checkIsSunked(int x, int y) {
         Queue<int[]> q = new ArrayDeque<>();
-        q.add(new int[]{x, y});
+        q.add(new int[] { x, y });
         field[x][y] = CHECK;
 
         while (!q.isEmpty()) {
@@ -224,26 +222,26 @@ public class Player implements Field {
                 return false;
             }
             if (field[xnew][ynew + 1] == SHIP) {
-                return true;
+                return false;
             }
 
             if (field[xnew - 1][ynew] == HITTED) {
-                q.add(new int[]{xnew - 1, ynew});
+                q.add(new int[] { xnew - 1, ynew });
                 field[xnew - 1][ynew] = CHECK;
             }
 
             if (field[xnew + 1][ynew] == HITTED) {
-                q.add(new int[]{xnew + 1, ynew});
+                q.add(new int[] { xnew + 1, ynew });
                 field[xnew + 1][ynew] = CHECK;
             }
-            
+
             if (field[xnew][ynew - 1] == HITTED) {
-                q.add(new int[]{xnew, ynew - 1});
+                q.add(new int[] { xnew, ynew - 1 });
                 field[xnew][ynew - 1] = CHECK;
             }
-            
+
             if (field[xnew][ynew + 1] == HITTED) {
-                q.add(new int[]{xnew, ynew + 1});
+                q.add(new int[] { xnew, ynew + 1 });
                 field[xnew][ynew + 1] = CHECK;
             }
         }

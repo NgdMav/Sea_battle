@@ -1,7 +1,7 @@
 package seaBattle.protocol.messages;
 
 public class MessageRequest extends Message {
-    
+
     private static final long serialVersionUID = 1L;
 
     private String from;

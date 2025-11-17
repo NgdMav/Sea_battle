@@ -13,8 +13,8 @@ public class MessageChallengeRequest extends MessageRequest {
         super(Protocol.CMD_CHALLENGE_REQUEST, from);
         this.challengeId = challengeId;
     }
-    
+
     public long getChallengeId() {
-		return challengeId;
-	}
+        return challengeId;
+    }
 }
