@@ -4,9 +4,9 @@ import seaBattle.protocol.Protocol;
 import seaBattle.protocol.messages.MessageResult;
 
 public class MessageConnectResult extends MessageResult {
-	
+
 	private static final long serialVersionUID = 1L;
-	
+
 	public MessageConnectResult() {
 		super(Protocol.CMD_CONNECT);
 	}

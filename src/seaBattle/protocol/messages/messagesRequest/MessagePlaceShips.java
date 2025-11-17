@@ -16,7 +16,7 @@ public class MessagePlaceShips extends MessageRequest {
         super(Protocol.CMD_SHIP_PLACE, from, sessionId);
         this.ships = ships;
     }
-    
+
     public List<Ship> getShips() {
         return ships;
     }

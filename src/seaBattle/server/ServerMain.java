@@ -41,6 +41,13 @@ public class ServerMain {
 	private static int MAX_USERS = 100;
 
 	public static void main(String[] args) {
+		try {
+			String ip = InetAddress.getLocalHost().getHostAddress();
+			System.out.println("Server IP: " + ip);
+			System.out.println("Server started on port: " + Protocol.PORT);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		try (ServerSocket serv = new ServerSocket(Protocol.PORT)) {
 			ServerMain.log("SERVER", "Initialized");
@@ -132,11 +139,11 @@ public class ServerMain {
 
 	public static ServerClientHandler setUser(String userNic, ServerClientHandler user) {
 		synchronized (ServerMain.syncUsers) {
-			ServerClientHandler res = ServerMain.users.put(userNic, user);
 			if (user == null) {
-				ServerMain.users.remove(userNic);
+				return ServerMain.users.remove(userNic); // Используйте remove вместо put
+			} else {
+				return ServerMain.users.put(userNic, user);
 			}
-			return res;
 		}
 	}
 
@@ -341,7 +348,7 @@ class ServerClientHandler extends Thread {
 
 	public ServerClientHandler(Socket s) throws IOException {
 		sock = s;
-		s.setSoTimeout(1000);
+		// s.setSoTimeout(1000);
 		os = new ObjectOutputStream(s.getOutputStream());
 		is = new ObjectInputStream(s.getInputStream());
 		addr = s.getInetAddress();
@@ -354,9 +361,22 @@ class ServerClientHandler extends Thread {
 				Message msg = null;
 				try {
 					msg = (Message) is.readObject();
+				} catch (java.io.EOFException e) {
+					break;
+				} catch (SocketException e) {
+					break;
 				} catch (IOException e) {
+					if (!sock.isClosed()) {
+						ServerMain.log("USER", "IO error for " + userNic + ": " + e.getMessage());
+					}
+					break;
 				} catch (ClassNotFoundException e) {
+					ServerMain.log("USER", "Invalid message from " + userNic + ": " + e.getMessage());
+					continue;
 				}
+
+				if (msg == null)
+					continue;
 				if (msg != null)
 					switch (msg.getID()) {
 
@@ -390,6 +410,7 @@ class ServerClientHandler extends Thread {
 							} else {
 								os.writeObject(new MessageError("Target player not found"));
 							}
+							break;
 
 						case Protocol.CMD_CHALLENGE_RESPONSE:
 							MessageChallengeResponse resp = (MessageChallengeResponse) msg;
@@ -435,7 +456,12 @@ class ServerClientHandler extends Thread {
 						case Protocol.CMD_READY:
 							MessageReadyToPlay mready = (MessageReadyToPlay) msg;
 							session = ServerMain.getSession(mready.getSessionId());
-							session.playerReady(mready.getFrom());
+							boolean start = session.playerReady(mready.getFrom());
+							if (start) {
+								sendMessage(new MessageReadyToPlay(session.getToStart(), session.getSessionId()));
+								ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(mready.getFrom()));
+								enemy.sendMessage(new MessageReadyToPlay(session.getToStart(), session.getSessionId()));
+							}
 							break;
 
 						case Protocol.CMD_MOVE:
@@ -444,22 +470,27 @@ class ServerClientHandler extends Thread {
 							try {
 								MoveResult res = session.move(msgmove.getFrom(), msgmove.getX(), msgmove.getY());
 
-								sendMessage(new MessageMoveResult(true,
-										msgmove.getFrom() + " move done",
-										msgmove.getSessionId(), msgmove.getX(),
-										msgmove.getY(), res.hitted, res.sunked,
-										res.gameOver, res.field));
+								if (!res.gameOver) {
+									sendMessage(new MessageMoveResult(true,
+											msgmove.getFrom() + " move done",
+											msgmove.getSessionId(), msgmove.getX(),
+											msgmove.getY(), res.hitted, res.sunked,
+											res.gameOver, res.field));
 
-								ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(msgmove.getFrom()));
-								enemy.sendMessage((new MessageMoveResult(true,
-										msgmove.getFrom() + " move done",
-										msgmove.getSessionId(), msgmove.getX(),
-										msgmove.getY(), res.hitted, res.sunked,
-										res.gameOver, res.field)));
+									ServerClientHandler enemy = ServerMain
+											.getUser(session.getEnemyNic(msgmove.getFrom()));
+									enemy.sendMessage((new MessageMoveResult(true,
+											msgmove.getFrom() + " move done",
+											msgmove.getSessionId(), msgmove.getX(),
+											msgmove.getY(), res.hitted, res.sunked,
+											res.gameOver, res.field)));
+								}
 
 								if (res.gameOver) {
 									sendMessage(new MessageGameOver(true, "Game over", msgmove.getSessionId(),
 											msgmove.getFrom()));
+									ServerClientHandler enemy = ServerMain
+											.getUser(session.getEnemyNic(msgmove.getFrom()));
 									enemy.sendMessage(new MessageGameOver(true, "Game over", msgmove.getSessionId(),
 											msgmove.getFrom()));
 								}
@@ -490,7 +521,7 @@ class ServerClientHandler extends Thread {
 					}
 			}
 		} catch (IOException e) {
-			ServerMain.log("USER", "Disconnect...");
+			ServerMain.log("USER", "Unexpected error for " + userNic + ": " + e.getMessage());
 		} finally {
 			disconnect();
 		}

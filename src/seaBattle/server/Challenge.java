@@ -11,7 +11,15 @@ public class Challenge {
         this.toNic = toNic;
     }
 
-    public long getId() { return id; }
-    public String getFromNic() { return fromNic; }
-    public String getToNic() { return toNic; }
+    public long getId() {
+        return id;
+    }
+
+    public String getFromNic() {
+        return fromNic;
+    }
+
+    public String getToNic() {
+        return toNic;
+    }
 }
