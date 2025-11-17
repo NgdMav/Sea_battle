@@ -3,8 +3,8 @@ package seaBattle.protocol.messages.messagesResult;
 import seaBattle.protocol.Protocol;
 import seaBattle.protocol.messages.MessageResult;
 
-public class MessageGameOver extends MessageResult{
-    
+public class MessageGameOver extends MessageResult {
+
     private static final long serialVersionUID = 1L;
 
     private long sessionId;

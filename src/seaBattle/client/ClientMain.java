@@ -656,11 +656,7 @@ class ClientReceiver extends Thread {
 
 				String toStart = ((MessageReadyToPlay) msg).getFrom();
 				// System.out.println(toStart);
-				if (session.userNic.equals(toStart)) {
-					session.myTurn = true;
-				} else {
-					session.myTurn = false;
-				}
+				session.myTurn = session.userNic.equals(toStart);
 				break;
 
 			case Protocol.CMD_MOVE:

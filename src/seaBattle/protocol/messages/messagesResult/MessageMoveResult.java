@@ -4,7 +4,7 @@ import seaBattle.protocol.Protocol;
 import seaBattle.protocol.messages.MessageResult;
 
 public class MessageMoveResult extends MessageResult {
-    
+
     private static final long serialVersionUID = 1L;
 
     private long sessionId;
@@ -15,8 +15,9 @@ public class MessageMoveResult extends MessageResult {
     private boolean gameOver;
     private int[][] enemyField;
 
-    public MessageMoveResult(boolean isGood, String message, long sessionId, int x, int y, boolean hitted, boolean sunked, boolean gameOver, int[][] enemyField) {
-		super(Protocol.CMD_MOVE, isGood, message);
+    public MessageMoveResult(boolean isGood, String message, long sessionId, int x, int y, boolean hitted,
+            boolean sunked, boolean gameOver, int[][] enemyField) {
+        super(Protocol.CMD_MOVE, isGood, message);
         this.sessionId = sessionId;
         this.x = x;
         this.y = y;
@@ -25,9 +26,10 @@ public class MessageMoveResult extends MessageResult {
         this.gameOver = gameOver;
         this.enemyField = enemyField;
     }
-    
-    public MessageMoveResult(byte id, boolean isGood, String message, long sessionId, int x, int y, boolean hitted, boolean sunked, boolean gameOver, int[][] enemyField) {
-		super(id, isGood, message);
+
+    public MessageMoveResult(byte id, boolean isGood, String message, long sessionId, int x, int y, boolean hitted,
+            boolean sunked, boolean gameOver, int[][] enemyField) {
+        super(id, isGood, message);
         this.sessionId = sessionId;
         this.x = x;
         this.y = y;
@@ -44,23 +46,23 @@ public class MessageMoveResult extends MessageResult {
     public int getX() {
         return x;
     }
-    
+
     public int getY() {
         return y;
     }
-    
+
     public boolean getHitted() {
         return hitted;
     }
-    
+
     public boolean getSunked() {
         return sunked;
     }
-    
+
     public boolean getGameOver() {
         return gameOver;
     }
-    
+
     public int[][] getEnemyField() {
         return enemyField;
     }

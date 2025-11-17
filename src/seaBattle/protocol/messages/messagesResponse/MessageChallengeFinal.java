@@ -11,7 +11,7 @@ public class MessageChallengeFinal extends MessageResponse {
         super(Protocol.CMD_CHALLENGE_FINAL, resultCode, message);
         setSessionId(sessionId);
     }
-    
+
     public MessageChallengeFinal(long sessionId) {
         super(Protocol.CMD_CHALLENGE_FINAL);
         setSessionId(sessionId);

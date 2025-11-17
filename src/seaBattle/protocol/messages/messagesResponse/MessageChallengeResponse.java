@@ -21,10 +21,10 @@ public class MessageChallengeResponse extends MessageResponse {
         this.challengeId = challengeId;
         this.accepted = accepted;
     }
-    
+
     public long getChallengeId() {
-		return challengeId;
-	}
+        return challengeId;
+    }
 
     public boolean getAccepted() {
         return accepted;

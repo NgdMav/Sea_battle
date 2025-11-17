@@ -41,6 +41,13 @@ public class ServerMain {
 	private static int MAX_USERS = 100;
 
 	public static void main(String[] args) {
+		try {
+			String ip = InetAddress.getLocalHost().getHostAddress();
+			System.out.println("Server IP: " + ip);
+			System.out.println("Server started on port: " + Protocol.PORT);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		try (ServerSocket serv = new ServerSocket(Protocol.PORT)) {
 			ServerMain.log("SERVER", "Initialized");

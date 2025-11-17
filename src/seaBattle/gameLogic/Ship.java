@@ -4,9 +4,9 @@ import java.io.Serializable;
 import java.security.InvalidParameterException;
 
 public class Ship implements Serializable {
-    
+
     private static final long serialVersionUID = 1L;
-    
+
     public enum Orientation {
         horizontal,
         vertical
@@ -28,8 +28,7 @@ public class Ship implements Serializable {
             if (x > 11 - length) {
                 throw new InvalidParameterException("Ship does not fit");
             }
-        }
-        else {
+        } else {
             if (y > 11 - length) {
                 throw new InvalidParameterException("Ship does not fit");
             }
@@ -52,8 +51,7 @@ public class Ship implements Serializable {
             if (x > 11 - length) {
                 throw new InvalidParameterException("Ship does not fit");
             }
-        }
-        else {
+        } else {
             if (y > 11 - length) {
                 throw new InvalidParameterException("Ship does not fit");
             }
@@ -72,11 +70,11 @@ public class Ship implements Serializable {
     public int getY() {
         return y;
     }
-    
+
     public int getLength() {
         return length;
     }
-    
+
     public Orientation getOrientation() {
         return or;
     }

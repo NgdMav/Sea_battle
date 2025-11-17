@@ -48,5 +48,5 @@ public class MessageResponse extends Message {
 
     public boolean isError() {
         return resultCode == Protocol.RESULT_CODE_ERROR;
-    }    
+    }
 }
