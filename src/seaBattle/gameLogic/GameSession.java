@@ -75,6 +75,19 @@ public class GameSession {
         return true;
     }
 
+    public synchronized boolean playerAReady(String nic) {
+        if (A.getNic().equals(nic)) {
+            return true;
+        }
+        return false;
+    }
+    public synchronized boolean playerBReady(String nic) {
+        if (B.getNic().equals(nic)) {
+            return true;
+        }
+        return false;
+    }
+
     public synchronized boolean playerReady(String nic) {
         if (A.getNic().equals(nic)) {
             aready = true;

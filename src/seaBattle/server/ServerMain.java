@@ -26,6 +26,7 @@ import seaBattle.protocol.messages.messagesRequest.MessageForfeit;
 import seaBattle.protocol.messages.messagesRequest.MessageGameStart;
 import seaBattle.protocol.messages.messagesRequest.MessageGetField;
 import seaBattle.protocol.messages.messagesRequest.MessageMove;
+import seaBattle.protocol.messages.messagesRequest.MessageOpponentReady;
 import seaBattle.protocol.messages.messagesRequest.MessagePlaceShips;
 import seaBattle.protocol.messages.messagesRequest.MessageReadyToPlay;
 import seaBattle.protocol.messages.messagesResponse.MessageChallengeResponse;
@@ -518,10 +519,19 @@ class ServerClientHandler extends Thread {
 						case Protocol.CMD_READY:
 							MessageReadyToPlay mready = (MessageReadyToPlay) msg; 
 							session = ServerMain.getSession(mready.getSessionId());
+							if(session.playerAReady(mready.getFrom()))
+							{
+								ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(mready.getFrom()));
+								enemy.sendMessage(new MessageOpponentReady(session.getPlayerA().getNic(), session.getSessionId()));
+							}
+							if(session.playerBReady(mready.getFrom()))
+							{
+								sendMessage(new MessageOpponentReady(session.getPlayerB().getNic(), session.getSessionId()));
+							}
 							boolean start = session.playerReady(mready.getFrom());
 							if (start) {
-								sendMessage(new MessageReadyToPlay(session.getToStart(), session.getSessionId()));
 								ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(mready.getFrom()));
+								sendMessage(new MessageReadyToPlay(session.getToStart(), session.getSessionId()));
 								enemy.sendMessage(new MessageReadyToPlay(session.getToStart(), session.getSessionId()));
 							}
 							break;

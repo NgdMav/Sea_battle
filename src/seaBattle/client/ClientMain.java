@@ -24,6 +24,7 @@ import seaBattle.protocol.messages.messages.MessagePing;
 import seaBattle.protocol.messages.messages.MessageUser;
 import seaBattle.protocol.messages.messagesRequest.MessageChallengeRequest;
 import seaBattle.protocol.messages.messagesRequest.MessageGameStart;
+import seaBattle.protocol.messages.messagesRequest.MessageOpponentReady;
 import seaBattle.protocol.messages.messagesRequest.MessagePlaceShips;
 import seaBattle.protocol.messages.messagesRequest.MessageReadyToPlay;
 import seaBattle.protocol.messages.messagesResponse.MessageChallengeFinal;
@@ -192,6 +193,10 @@ public class ClientMain
 							{
 								System.out.println("Ships aren't placed succesfully. Please retry by entering <place>");
 							}
+						}
+						case Protocol.CMD_OPPONENT_READY:
+						{
+							System.out.println("your opponent " + ((MessageOpponentReady) msg).getFrom() + " is ready");
 						}
 						default:
 							assert(false);
