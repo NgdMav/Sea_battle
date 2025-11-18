@@ -188,11 +188,13 @@ public class ServerMain {
 
 	public static GameSession setSession(long sessionId, GameSession session) {
 		synchronized (ServerMain.syncSession) {
-			GameSession res = ServerMain.gameSessions.put(sessionId, session);
 			if (session == null) {
-				ServerMain.gameSessions.remove(sessionId);
+				return ServerMain.gameSessions.remove(sessionId);
 			}
-			return res;
+			else
+			{
+				return ServerMain.gameSessions.put(sessionId, session);
+			}
 		}
 	}
 
