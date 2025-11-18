@@ -119,16 +119,21 @@ public class ClientMain
 	{
 		ObjectInputStream ois;
 		Session ses;
+		private volatile boolean running = true;
 		public ListenerThread(ObjectInputStream ois, Session ses)
 		{
 			this.ois = ois;
 			this.ses = ses;
 			setDaemon(true);
 		}
+		public void stopListening() {
+			running = false;
+			this.interrupt();
+		}
 		@Override
 		public void run()
 		{
-			while(true)
+			while(running)
 			{
 				try
 				{
@@ -201,7 +206,7 @@ public class ClientMain
 						}
 						case Protocol.CMD_OPPONENT_READY:
 						{
-							System.out.println("your opponent " + ((MessageOpponentReady) msg).getFrom() + " is ready");
+							System.out.println("Your opponent " + ((MessageOpponentReady) msg).getFrom() + " is ready");
 							break;
 						}
 						case Protocol.CMD_READY:
@@ -223,7 +228,11 @@ public class ClientMain
 					}
 				}
 				catch(IOException | ClassNotFoundException e)
-				{}
+				{
+					if (running) {
+                    	System.err.println("Connection error: " + e.getMessage());
+                	}
+				}
 			}
 		}
 	}
@@ -245,13 +254,15 @@ public class ClientMain
 							Message msg = getCommand(ses, in, is, os);
 							os.writeObject(msg);
 							if(msg.getID() == Protocol.CMD_DISCONNECT)
-							{
+							{ 
+								lt.stopListening();
 								break;
 							}	
 						}			
 					} 
 					finally 
 					{
+						lt.stopListening();
 						closeSession(ses, os);
 					}
 				}
@@ -297,10 +308,12 @@ public class ClientMain
 				break;
 			String str = in.nextLine();
 			byte cmd = translateCmd(str);
+			if (cmd == -1) {
+                System.out.println("Disconnecting...");
+                return new MessageDisconnect();
+            }
 			switch ( cmd ) 
 			{
-				case -1:
-					return new MessageDisconnect();
 				case Protocol.CMD_PING:
 				{
 					return new MessagePing();
@@ -332,7 +345,6 @@ public class ClientMain
 						for(ChallengeFromPlayer cfp : ses.challenges) {
 							if (cfp.getChallengeID().equals(chID)) {
 								challengeExists = true;
-								break;
 							}
 						}
 						
@@ -352,12 +364,13 @@ public class ClientMain
 							return new MessageChallengeResponse(chID, false);
 						}
 						System.out.println("Wrong answer");
-						continue;
+						break;
 					}
 					catch(Exception e)
 					{
 						System.err.println(e);
 					}
+					break;
 				}
 				case Protocol.CMD_SHIP_PLACE:
 				{
@@ -376,6 +389,7 @@ public class ClientMain
 				}
 				case Protocol.CMD_READY:
 				{
+					System.out.println("You are ready!");
 					return new MessageReadyToPlay(ses.userNickName, ses.currentGameSessionID);
 				}
 				default: 
