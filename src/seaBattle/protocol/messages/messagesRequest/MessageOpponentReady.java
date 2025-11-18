@@ -8,6 +8,6 @@ public class MessageOpponentReady extends MessageRequest {
     private static final long serialVersionUID = 1L;
 
     public MessageOpponentReady(String from, long sessionId) {
-        super(Protocol.CMD_READY, from, sessionId);
+        super(Protocol.CMD_OPPONENT_READY, from, sessionId);
     }
 }

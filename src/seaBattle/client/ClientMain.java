@@ -133,6 +133,10 @@ public class ClientMain
 				try
 				{
 					Message msg = (Message) ois.readObject();
+					 if (msg == null) {
+						System.out.println("Received null message, continuing...");
+						continue;
+            		}
 					switch (msg.getID()) 
 					{
 						case Protocol.CMD_ERROR:
@@ -384,7 +388,7 @@ public class ClientMain
 	}
 	catch(Exception e)
 	{}
-	return null;
+	return new MessageDisconnect();
 	}
 
 	static List<Ship> randomShips() {

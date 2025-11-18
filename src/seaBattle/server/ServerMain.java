@@ -522,7 +522,6 @@ class ServerClientHandler extends Thread {
 							String currentPlayer = mready.getFrom();
 							String enemyNic = session.getEnemyNic(currentPlayer);
 							ServerClientHandler enemyP = ServerMain.getUser(enemyNic);
-							// Уведомляем противника о готовности
 							if (enemyP != null) {
 								enemyP.sendMessage(new MessageOpponentReady(currentPlayer, session.getSessionId()));
 							}
