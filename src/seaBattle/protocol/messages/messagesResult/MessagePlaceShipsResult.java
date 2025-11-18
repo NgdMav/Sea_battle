@@ -10,11 +10,11 @@ public class MessagePlaceShipsResult extends MessageResult {
 	private boolean good = false;
 
 	public MessagePlaceShipsResult() {
-		super(Protocol.CMD_SHIP_PLACE);
+		super(Protocol.CMD_PLACE_SHIPS_RESULT);
 	}
 
 	public MessagePlaceShipsResult(boolean isGood, String message) {
-		super(Protocol.CMD_SHIP_PLACE, isGood, message);
+		super(Protocol.CMD_PLACE_SHIPS_RESULT, isGood, message);
 		this.good = isGood;
 	}
 
