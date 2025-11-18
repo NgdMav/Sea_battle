@@ -458,7 +458,6 @@ class ServerClientHandler extends Thread {
 						case Protocol.CMD_CHALLENGE:
 							MessageChallenge challenge = (MessageChallenge) msg;
 							ServerClientHandler target = ServerMain.getUser(challenge.getToNic());
-
 							if (target != null) {
 								long cid = ServerMain.nextChallengeId();
 								Challenge ch = new Challenge(cid, userNic, challenge.getToNic());
@@ -515,9 +514,9 @@ class ServerClientHandler extends Thread {
 							boolean good = session.setPlaceShip(mPlaceShips.getFrom(), mPlaceShips.getShips());
 							sendMessage(new MessagePlaceShipsResult(good, ""));
 							break;
-
+							
 						case Protocol.CMD_READY:
-							MessageReadyToPlay mready = (MessageReadyToPlay) msg;
+							MessageReadyToPlay mready = (MessageReadyToPlay) msg; 
 							session = ServerMain.getSession(mready.getSessionId());
 							boolean start = session.playerReady(mready.getFrom());
 							if (start) {

@@ -25,12 +25,14 @@ import seaBattle.protocol.messages.messages.MessageUser;
 import seaBattle.protocol.messages.messagesRequest.MessageChallengeRequest;
 import seaBattle.protocol.messages.messagesRequest.MessageGameStart;
 import seaBattle.protocol.messages.messagesRequest.MessagePlaceShips;
+import seaBattle.protocol.messages.messagesRequest.MessageReadyToPlay;
 import seaBattle.protocol.messages.messagesResponse.MessageChallengeFinal;
 import seaBattle.protocol.messages.messagesResponse.MessageChallengeResponse;
 import seaBattle.protocol.messages.messagesResult.MessageChallengeResult;
 import seaBattle.protocol.messages.messagesResult.MessageConnectResult;
 import seaBattle.protocol.messages.messagesResult.MessageError;
 import seaBattle.protocol.messages.messagesResult.MessageGameOver;
+import seaBattle.protocol.messages.messagesResult.MessagePlaceShipsResult;
 import seaBattle.protocol.messages.messagesResult.MessageUserResult;
 
 @SuppressWarnings("deprecation")
@@ -155,6 +157,7 @@ public class ClientMain
 							ChallengeFromPlayer cfp = new ChallengeFromPlayer(((MessageChallengeRequest) msg).getChallengeId(), ((MessageChallengeRequest) msg).getFrom());
 							ses.challenges.add(cfp);
 							System.out.println("You've received challenge request " + ((MessageChallengeRequest) msg).getChallengeId() + " from " + ((MessageChallengeRequest) msg).getFrom());
+							System.out.println("To answer the challenge enter 'atc'");
 							break;
 						}
 						case Protocol.CMD_CHALLENGE:
@@ -170,12 +173,25 @@ public class ClientMain
 							ses.currentGameSessionID = ((MessageGameStart) msg).getSessionId();
 							ses.gameStarted = false;
 							ses.shipsReady = false;
+							System.out.println("To place ships enter <place>");
 							break;
 						}
 						case Protocol.CMD_CHALLENGE_SUCCESFULLY_SEND:
 						{
 							System.out.println("Challenge succesfully send");
 							break;
+						}
+						case Protocol.CMD_PLACE_SHIPS_RESULT:
+						{
+							boolean good = ((MessagePlaceShipsResult) msg).getGood();
+							if(good)
+							{
+								System.out.println("Ships succesfully placed. Enter <ready> if you are ready and wait for your opponent");
+							}
+							else
+							{
+								System.out.println("Ships aren't placed succesfully. Please retry by entering <place>");
+							}
 						}
 						default:
 							assert(false);
@@ -321,16 +337,22 @@ public class ClientMain
 				}
 				case Protocol.CMD_SHIP_PLACE:
 				{
-					while(true){
-						System.out.print("Do you want to randomise your ships placement(Y/N): ");
-						String answer = in.nextLine();
-						if(answer.equals("Y"))
-						{
-							List<Ship> ships = randomShips();
-							System.out.println("Ships created");
-							return new MessagePlaceShips(ses.userNickName, ses.currentGameSessionID, ships);
-						}
+					System.out.print("Do you want to randomise your ships placement(Y/N): ");
+					String answer = in.nextLine();
+					if(answer.equals("Y"))
+					{
+						List<Ship> ships = randomShips();
+						System.out.println("Ships created");
+						return new MessagePlaceShips(ses.userNickName, ses.currentGameSessionID, ships);
 					}
+					else
+					{
+
+					}
+				}
+				case Protocol.CMD_READY:
+				{
+					return new MessageReadyToPlay(ses.userNickName, ses.currentGameSessionID);
 				}
 				default: 
 				{
@@ -458,6 +480,7 @@ public class ClientMain
 		commands.put("atc", Byte.valueOf(Protocol.CMD_CHALLENGE_RESPONSE));
 		commands.put("q", Byte.valueOf((byte) -1));
 		commands.put("place", Byte.valueOf(Protocol.CMD_SHIP_PLACE));
+		commands.put("ready", Byte.valueOf(Protocol.CMD_READY));
 	}
 	
 	static byte translateCmd(String str) 
