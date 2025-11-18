@@ -7,6 +7,8 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -159,8 +161,8 @@ public class ServerMain {
 		}
 	}
 
-	private static Object syncSession = new Object();
-	private static ConcurrentHashMap<Long, GameSession> gameSessions = new ConcurrentHashMap<Long, GameSession>();
+	public static Object syncSession = new Object();
+	public static ConcurrentHashMap<Long, GameSession> gameSessions = new ConcurrentHashMap<Long, GameSession>();
 	private static long id = 1000000;
 
 	public static long nextId() {
@@ -205,8 +207,8 @@ public class ServerMain {
 		}
 	}
 
-	private static final Object syncChallenges = new Object();
-	private static final ConcurrentHashMap<Long, Challenge> challenges = new ConcurrentHashMap<>();
+	public static final Object syncChallenges = new Object();
+	public static final ConcurrentHashMap<Long, Challenge> challenges = new ConcurrentHashMap<>();
 
 	public static Challenge getChallenge(long id) {
 		synchronized (syncChallenges) {
@@ -390,6 +392,60 @@ class ServerClientHandler extends Thread {
 							break;
 
 						case Protocol.CMD_DISCONNECT:
+							synchronized (ServerMain.syncChallenges) {
+								List<Long> challengesToRemove = new ArrayList<>();
+								for (Challenge challenge : ServerMain.challenges.values()) {
+									if (challenge.getFromNic().equals(userNic)
+											|| challenge.getToNic().equals(userNic)) {
+										challengesToRemove.add(challenge.getId());
+
+										// Уведомляем другую сторону о отмене вызова
+										String otherUser = challenge.getFromNic().equals(userNic) ? challenge.getToNic()
+												: challenge.getFromNic();
+										ServerClientHandler otherHandler = ServerMain.getUser(otherUser);
+										if (otherHandler != null) {
+											otherHandler.sendMessage(
+													new MessageError("Challenge cancelled - user disconnected"));
+										}
+									}
+								}
+								for (Long challengeId : challengesToRemove) {
+									ServerMain.removeChallenge(challengeId);
+								}
+							}
+							synchronized (ServerMain.syncSession) {
+								List<Long> sessionsToRemove = new ArrayList<>();
+								for (GameSession gameSession : ServerMain.gameSessions.values()) {
+									if (gameSession.getPlayerA().getNic().equals(userNic) ||
+											gameSession.getPlayerB().getNic().equals(userNic)) {
+
+										sessionsToRemove.add(gameSession.getSessionId());
+
+										String opponentNic = gameSession.getEnemyNic(userNic);
+										ServerClientHandler opponentHandler = ServerMain.getUser(opponentNic);
+										if (opponentHandler != null) {
+											opponentHandler.sendMessage(new MessageGameOver(
+													true,
+													"Opponent disconnected - you win!",
+													gameSession.getSessionId(),
+													opponentNic));
+
+											// Также отправляем сообщение об ошибке для информации
+											opponentHandler.sendMessage(new MessageError(
+													"Your opponent has disconnected from the game"));
+										}
+
+										// Завершаем игровую сессию
+										gameSession.gameEnd();
+									}
+								}
+								for (Long sessionId : sessionsToRemove) {
+									ServerMain.setSession(sessionId, null);
+								}
+							}
+							unregister();
+
+							ServerMain.log("DISCONNECT", "User " + userNic + " fully disconnected");
 							return;
 
 						case Protocol.CMD_USER:
@@ -407,6 +463,7 @@ class ServerClientHandler extends Thread {
 								target.sendMessage(new MessageChallengeRequest(userNic, cid));
 								ServerMain.log("CHALLENGE",
 										"Created: " + cid + " " + userNic + " - " + challenge.getToNic());
+								sendMessage(new MessageError("You successfully send challenge"));
 							} else {
 								os.writeObject(new MessageError("Target player not found"));
 							}
@@ -439,6 +496,8 @@ class ServerClientHandler extends Thread {
 
 								ServerMain.log("GAME SESSION", "Started: " + sessionId);
 							} else {
+								sendMessage(new MessageChallengeResult(false,
+										"You declined challenge" , ch.getId()));
 								initiator.sendMessage(new MessageChallengeResult(false,
 										"Challenge declined by " + ch.getToNic(), ch.getId()));
 							}
