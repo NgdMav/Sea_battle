@@ -519,14 +519,12 @@ class ServerClientHandler extends Thread {
 						case Protocol.CMD_READY:
 							MessageReadyToPlay mready = (MessageReadyToPlay) msg; 
 							session = ServerMain.getSession(mready.getSessionId());
-							if(session.playerAReady(mready.getFrom()))
-							{
-								ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(mready.getFrom()));
-								enemy.sendMessage(new MessageOpponentReady(session.getPlayerA().getNic(), session.getSessionId()));
-							}
-							if(session.playerBReady(mready.getFrom()))
-							{
-								sendMessage(new MessageOpponentReady(session.getPlayerB().getNic(), session.getSessionId()));
+							String currentPlayer = mready.getFrom();
+							String enemyNic = session.getEnemyNic(currentPlayer);
+							ServerClientHandler enemyP = ServerMain.getUser(enemyNic);
+							// Уведомляем противника о готовности
+							if (enemyP != null) {
+								enemyP.sendMessage(new MessageOpponentReady(currentPlayer, session.getSessionId()));
 							}
 							boolean start = session.playerReady(mready.getFrom());
 							if (start) {

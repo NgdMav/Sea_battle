@@ -193,10 +193,25 @@ public class ClientMain
 							{
 								System.out.println("Ships aren't placed succesfully. Please retry by entering <place>");
 							}
+							break;
 						}
 						case Protocol.CMD_OPPONENT_READY:
 						{
 							System.out.println("your opponent " + ((MessageOpponentReady) msg).getFrom() + " is ready");
+							break;
+						}
+						case Protocol.CMD_READY:
+						{
+							String firstPlayer = ((MessageReadyToPlay) msg).getFrom();
+							if (firstPlayer.equals(ses.userNickName)) {
+								System.out.println("Game started! Your turn first.");
+								ses.yourTurn = true;
+							} else {
+								System.out.println("Game started! Opponent's turn first.");
+								ses.yourTurn = false;
+							}
+							ses.gameStarted = true;
+							break;
 						}
 						default:
 							assert(false);
