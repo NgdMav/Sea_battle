@@ -19,6 +19,7 @@ interface CMD {
 	static final byte CMD_ERROR = 16;
 	static final byte CMD_READY = 17;
 	static final byte CMD_GET_FIELD = 18;
+	static final byte CMD_CHALLENGE_SUCCESFULLY_SEND = 19;
 }
 
 interface RESULT {

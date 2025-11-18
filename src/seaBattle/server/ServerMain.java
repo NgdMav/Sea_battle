@@ -21,6 +21,7 @@ import seaBattle.protocol.messages.messages.MessageChallenge;
 import seaBattle.protocol.messages.messages.MessageConnect;
 import seaBattle.protocol.messages.messages.MessageUser;
 import seaBattle.protocol.messages.messagesRequest.MessageChallengeRequest;
+import seaBattle.protocol.messages.messagesRequest.MessageChallengeSuccesfullySend;
 import seaBattle.protocol.messages.messagesRequest.MessageForfeit;
 import seaBattle.protocol.messages.messagesRequest.MessageGameStart;
 import seaBattle.protocol.messages.messagesRequest.MessageGetField;
@@ -460,6 +461,8 @@ class ServerClientHandler extends Thread {
 								long cid = ServerMain.nextChallengeId();
 								Challenge ch = new Challenge(cid, userNic, challenge.getToNic());
 								ServerMain.registerChallenge(ch);
+								String from = challenge.getFromNic();
+								os.writeObject(new MessageChallengeSuccesfullySend(from, cid));
 								target.sendMessage(new MessageChallengeRequest(userNic, cid));
 								ServerMain.log("CHALLENGE",
 										"Created: " + cid + " " + userNic + " - " + challenge.getToNic());

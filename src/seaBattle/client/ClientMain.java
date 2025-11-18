@@ -172,6 +172,11 @@ public class ClientMain
 							ses.shipsReady = false;
 							break;
 						}
+						case Protocol.CMD_CHALLENGE_SUCCESFULLY_SEND:
+						{
+							System.out.println("Challenge succesfully send");
+							break;
+						}
 						default:
 							assert(false);
 							break;
@@ -279,7 +284,7 @@ public class ClientMain
 					{
 						System.out.println(cfp.getPlayerNickName() + ": " + cfp.getChallengeID());
 					}
-					System.out.print("Enter challenge ID which you want to response + Y/N: ");
+					System.out.println("Enter challenge ID which you want to response + Y/N: ");
 					System.out.print("Enter challenge ID: ");
 					try {
 						Long chID = Long.parseLong(in.nextLine().trim());
@@ -298,16 +303,21 @@ public class ClientMain
 						
 						System.out.print("Accept challenge? (Y/N): ");
 						String answer = in.nextLine().trim().toUpperCase();
-					if(answer.equals("Y"))
-					{
-						return new MessageChallengeResponse(chID, true);
+						if(answer.equals("Y"))
+						{
+							return new MessageChallengeResponse(chID, true);
+						}
+						if(answer.equals("N"))
+						{
+							return new MessageChallengeResponse(chID, false);
+						}
+						System.out.println("Wrong answer");
+						continue;
 					}
-					if(answer.equals("N"))
+					catch(Exception e)
 					{
-						return new MessageChallengeResponse(chID, false);
+						System.err.println(e);
 					}
-					System.out.println("Wrong answer");
-					continue;
 				}
 				case Protocol.CMD_SHIP_PLACE:
 				{
