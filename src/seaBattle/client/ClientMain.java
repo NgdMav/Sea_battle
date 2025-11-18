@@ -287,6 +287,9 @@ public class ClientMain {
 
 	static Message answerChallenge(Scanner in, Session ses) {
 
+		if (ses.gameStarted) {
+			
+		}
 		if (ses.pendingChallenges.isEmpty()) {
 			log("CLIENT", "No active challenges");
 			return null;
@@ -355,7 +358,7 @@ public class ClientMain {
 
 			try {
 				list = randomShips();
-				System.out.println("Random ships successfully placed!");
+				System.out.println("Random ships successfully created!");
 			} catch (Exception e) {
 				System.out.println("Random placement error: " + e.getMessage());
 				return null;
