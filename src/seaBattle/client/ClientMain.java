@@ -7,19 +7,33 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.TreeMap;
+import javax.crypto.spec.ChaCha20ParameterSpec;
 import javax.naming.event.ObjectChangeListener;
+
+import seaBattle.gameLogic.Ship;
 import seaBattle.protocol.Protocol;
 import seaBattle.protocol.messages.Message;
+import seaBattle.protocol.messages.messages.MessageChallenge;
 import seaBattle.protocol.messages.messages.MessageConnect;
 import seaBattle.protocol.messages.messages.MessageDisconnect;
 import seaBattle.protocol.messages.messages.MessagePing;
 import seaBattle.protocol.messages.messages.MessageUser;
+import seaBattle.protocol.messages.messagesRequest.MessageChallengeRequest;
+import seaBattle.protocol.messages.messagesRequest.MessageGameStart;
+import seaBattle.protocol.messages.messagesRequest.MessagePlaceShips;
+import seaBattle.protocol.messages.messagesResponse.MessageChallengeFinal;
+import seaBattle.protocol.messages.messagesResponse.MessageChallengeResponse;
+import seaBattle.protocol.messages.messagesResult.MessageChallengeResult;
 import seaBattle.protocol.messages.messagesResult.MessageConnectResult;
 import seaBattle.protocol.messages.messagesResult.MessageError;
+import seaBattle.protocol.messages.messagesResult.MessageGameOver;
+import seaBattle.protocol.messages.messagesResult.MessageUserResult;
 
+@SuppressWarnings("deprecation")
 public class ClientMain 
 {
 	public static void main(String[] args)  
@@ -59,12 +73,33 @@ public class ClientMain
 		}
 	}
 
+		static class ChallengeFromPlayer
+		{
+			Long challengeID;
+			String playerNickName;
+
+			public ChallengeFromPlayer(Long challengeID, String playerNickName) {
+				this.challengeID = challengeID;
+				this.playerNickName = playerNickName;
+			}	
+
+			public Long getChallengeID()
+			{
+				return challengeID;
+			}
+
+			public String getPlayerNickName()
+			{
+				return playerNickName;
+			}
+		}
+
 		static class Session {
 		boolean connected = false;
 		String userNickName = null;
 		String userFullName = null;
-		String userOpenentNick = null;
-		List<Long> challenges = null;
+		String userOponnentNick = null;
+		List<ChallengeFromPlayer> challenges = null;
 		Long currentGameSessionID = null;
 		boolean shipsReady = false;
 		boolean gameStarted = false;
@@ -73,8 +108,10 @@ public class ClientMain
 		{
 			this.userNickName = userNickName;
 			this.userFullName = userFullName;
+			this.challenges = new ArrayList<ChallengeFromPlayer>();
 		}
 	}
+
 	static class ListenerThread extends Thread
 	{
 		ObjectInputStream ois;
@@ -101,15 +138,47 @@ public class ClientMain
 						case Protocol.CMD_PONG:
 							System.out.println("pong");
 							break;
+						case Protocol.CMD_USER:
+						{
+							System.out.print("active users: ");
+							String[] users = ((MessageUserResult) msg).getNics();
+							for(String user : users)
+							{
+								if(!ses.userNickName.equals(user))
+									System.out.print(user + "; ");
+							} 
+							System.out.println();
+							break;
+						}
+						case Protocol.CMD_CHALLENGE_REQUEST:
+						{
+							ChallengeFromPlayer cfp = new ChallengeFromPlayer(((MessageChallengeRequest) msg).getChallengeId(), ((MessageChallengeRequest) msg).getFrom());
+							ses.challenges.add(cfp);
+							System.out.println("You've received challenge request " + ((MessageChallengeRequest) msg).getChallengeId() + " from " + ((MessageChallengeRequest) msg).getFrom());
+							break;
+						}
+						case Protocol.CMD_CHALLENGE:
+						{
+							System.out.println(((MessageChallengeResult) msg).getMessage());
+							break;
+						}
+						case Protocol.CMD_GAME_STARTS:
+						{
+							String opponent = ((MessageGameStart) msg).getOppNic();
+							System.out.println("Game started with " + opponent);
+							ses.userOponnentNick = opponent;
+							ses.currentGameSessionID = ((MessageGameStart) msg).getSessionId();
+							ses.gameStarted = false;
+							ses.shipsReady = false;
+							break;
+						}
 						default:
 							assert(false);
 							break;
 					}
 				}
 				catch(IOException | ClassNotFoundException e)
-				{
-
-				}
+				{}
 			}
 		}
 	}
@@ -128,8 +197,12 @@ public class ClientMain
 					{
 						while (true) 
 						{
-							Message msg = getCommand(ses, in);
-							os.writeObject(msg);				
+							Message msg = getCommand(ses, in, is, os);
+							os.writeObject(msg);
+							if(msg.getID() == Protocol.CMD_DISCONNECT)
+							{
+								break;
+							}	
 						}			
 					} 
 					finally 
@@ -170,7 +243,9 @@ public class ClientMain
 		}
 	}
 
-	static Message getCommand(Session ses, Scanner in) {	
+	static Message getCommand(Session ses, Scanner in, ObjectInputStream is, ObjectOutputStream os) {	
+	try
+	{
 		while (true) 
 		{
 			if (in.hasNextLine()== false)
@@ -179,9 +254,73 @@ public class ClientMain
 			byte cmd = translateCmd(str);
 			switch ( cmd ) 
 			{
+				case -1:
+					return new MessageDisconnect();
 				case Protocol.CMD_PING:
 				{
 					return new MessagePing();
+				}
+				case Protocol.CMD_USER:
+				{
+					return new MessageUser();
+				}
+				case Protocol.CMD_CHALLENGE:
+				{
+					os.writeObject(new MessageUser());
+					Thread.currentThread().sleep(1000);
+					System.out.print("Enter opponent's nickname: ");
+					String opponentNickName = in.nextLine();
+					return new MessageChallenge(ses.userNickName, opponentNickName);
+				}
+				case Protocol.CMD_CHALLENGE_RESPONSE:
+				{
+					System.out.println("Challenges list");
+					for(ChallengeFromPlayer cfp : ses.challenges)
+					{
+						System.out.println(cfp.getPlayerNickName() + ": " + cfp.getChallengeID());
+					}
+					System.out.print("Enter challenge ID which you want to response + Y/N: ");
+					System.out.print("Enter challenge ID: ");
+					try {
+						Long chID = Long.parseLong(in.nextLine().trim());
+						boolean challengeExists = false;
+						for(ChallengeFromPlayer cfp : ses.challenges) {
+							if (cfp.getChallengeID().equals(chID)) {
+								challengeExists = true;
+								break;
+							}
+						}
+						
+						if (!challengeExists) {
+							System.out.println("Challenge with ID " + chID + " not found");
+							continue;
+						}
+						
+						System.out.print("Accept challenge? (Y/N): ");
+						String answer = in.nextLine().trim().toUpperCase();
+					if(answer.equals("Y"))
+					{
+						return new MessageChallengeResponse(chID, true);
+					}
+					if(answer.equals("N"))
+					{
+						return new MessageChallengeResponse(chID, false);
+					}
+					System.out.println("Wrong answer");
+					continue;
+				}
+				case Protocol.CMD_SHIP_PLACE:
+				{
+					while(true){
+						System.out.print("Do you want to randomise your ships placement(Y/N): ");
+						String answer = in.nextLine();
+						if(answer.equals("Y"))
+						{
+							List<Ship> ships = randomShips();
+							System.out.println("Ships created");
+							return new MessagePlaceShips(ses.userNickName, ses.currentGameSessionID, ships);
+						}
+					}
 				}
 				default: 
 				{
@@ -190,12 +329,125 @@ public class ClientMain
 				}
 			}
 		}
-		return null;
 	}
+	catch(Exception e)
+	{}
+	return null;
+	}
+
+	static List<Ship> randomShips() {
+		int[][] field = new int[12][12]; // Поле 12x12 (индексы 0-11), игровое поле 1-10
+		List<Ship> result = new ArrayList<>();
+
+		int[] sizes = { 4, 3, 3, 2, 2, 2, 1, 1, 1, 1 };
+
+		for (int len : sizes) {
+		boolean placed = false;
+
+		for (int attempt = 0; attempt < 1000 && !placed; attempt++) {
+			boolean vert = Math.random() < 0.5;
+
+			int maxX = vert ? 10 : 10 - len + 1;
+			int maxY = vert ? 10 - len + 1 : 10;
+
+			if (maxX < 1 || maxY < 1) {
+			continue;
+			}
+
+			int x = 1 + (int) (Math.random() * maxX);
+			int y = 1 + (int) (Math.random() * maxY);
+
+			try {
+			Ship s = new Ship(x, y, len, vert);
+
+			if (!canPlace(field, s))
+				continue;
+
+			placeOnField(field, s);
+			result.add(s);
+			placed = true;
+
+			} catch (Exception ignore) {
+
+			}
+		}
+
+		if (!placed) {
+			throw new RuntimeException("Unable to place random ships of length " + len);
+		}
+		}
+
+		return result;
+	}
+
+	static boolean canPlace(int[][] field, Ship s) {
+		int x = s.getX();
+		int y = s.getY();
+		int len = s.getLength();
+		boolean vert = s.getOrientation() == Ship.Orientation.vertical;
+
+		if (vert) {
+		if (y + len - 1 > 10)
+			return false;
+		} else {
+		if (x + len - 1 > 10)
+			return false;
+		}
+
+		for (int i = 0; i < len; i++) {
+		int cx = x + (vert ? 0 : i);
+		int cy = y + (vert ? i : 0);
+
+		if (field[cx][cy] != 0) {
+			return false;
+		}
+
+		// Проверяем соседние клетки
+		for (int dx = -1; dx <= 1; dx++) {
+			for (int dy = -1; dy <= 1; dy++) {
+			int nx = cx + dx;
+			int ny = cy + dy;
+
+			// Проверяем только клетки в пределах игрового поля (1-10)
+			if (nx >= 1 && nx <= 10 && ny >= 1 && ny <= 10) {
+				if (field[nx][ny] != 0) {
+				return false;
+				}
+			}
+			}
+		}
+		}
+
+		return true;
+	}
+
+	static void placeOnField(int[][] field, Ship s) {
+		int x = s.getX();
+		int y = s.getY();
+		int len = s.getLength();
+		boolean vert = s.getOrientation() == Ship.Orientation.vertical;
+
+		for (int i = 0; i < len; i++) {
+		int cx = x + (vert ? 0 : i);
+		int cy = y + (vert ? i : 0);
+
+		// Убеждаемся, что координаты в пределах игрового поля
+		if (cx >= 1 && cx <= 10 && cy >= 1 && cy <= 10) {
+			field[cx][cy] = 1;
+		}
+		}
+	}
+
+
 	static TreeMap<String,Byte> commands = new TreeMap<String,Byte>();
 	static 
 	{
-		commands.put("ping", new Byte((byte) Protocol.CMD_PING));
+		commands.put("ping", Byte.valueOf(Protocol.CMD_PING));
+		commands.put("users", Byte.valueOf(Protocol.CMD_USER));
+		commands.put("challenge", Byte.valueOf(Protocol.CMD_CHALLENGE));
+		commands.put("atc", Byte.valueOf(Protocol.CMD_CHALLENGE_RESPONSE));
+		commands.put("q", Byte.valueOf((byte) -1));
+		commands.put("place", Byte.valueOf(Protocol.CMD_SHIP_PLACE));
 	}
 	
 	static byte translateCmd(String str) 
