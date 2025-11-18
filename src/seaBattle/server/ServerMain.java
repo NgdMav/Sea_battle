@@ -468,7 +468,6 @@ class ServerClientHandler extends Thread {
 								target.sendMessage(new MessageChallengeRequest(userNic, cid));
 								ServerMain.log("CHALLENGE",
 										"Created: " + cid + " " + userNic + " - " + challenge.getToNic());
-								sendMessage(new MessageError("You successfully send challenge"));
 							} else {
 								os.writeObject(new MessageError("Target player not found"));
 							}
