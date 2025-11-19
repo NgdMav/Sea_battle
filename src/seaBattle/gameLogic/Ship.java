@@ -47,13 +47,13 @@ public class Ship implements Serializable {
         if (length < 1 || length > 4) {
             throw new InvalidParameterException("Wrong length of ship");
         }
-        if (or == Orientation.horizontal) {
+        if (!vert) {
             if (x > 11 - length) {
-                throw new InvalidParameterException("Ship does not fit");
+                throw new InvalidParameterException("Ship does not fit horizontally");
             }
         } else {
             if (y > 11 - length) {
-                throw new InvalidParameterException("Ship does not fit");
+                throw new InvalidParameterException("Ship does not fit vertically");
             }
         }
 

@@ -8,6 +8,7 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.TreeMap;
@@ -106,6 +107,7 @@ public class ClientMain
 		Long currentGameSessionID = null;
 		boolean shipsReady = false;
 		boolean gameStarted = false;
+		boolean playerReady = false;
 		boolean yourTurn = false;
 		Session(String userNickName, String userFullName) 
 		{
@@ -183,6 +185,7 @@ public class ClientMain
 							ses.currentGameSessionID = ((MessageGameStart) msg).getSessionId();
 							ses.gameStarted = false;
 							ses.shipsReady = false;
+							ses.playerReady = false;
 							System.out.println("To place ships enter <place>");
 							break;
 						}
@@ -196,10 +199,12 @@ public class ClientMain
 							boolean good = ((MessagePlaceShipsResult) msg).getGood();
 							if(good)
 							{
+								ses.shipsReady = true;
 								System.out.println("Ships succesfully placed. Enter <ready> if you are ready and wait for your opponent");
 							}
 							else
 							{
+								ses.shipsReady = false;
 								System.out.println("Ships aren't placed succesfully. Please retry by entering <place>");
 							}
 							break;
@@ -374,6 +379,11 @@ public class ClientMain
 				}
 				case Protocol.CMD_SHIP_PLACE:
 				{
+					if(ses.gameStarted)
+					{
+						System.out.println("You can' place ships during the game");
+						break;
+					}
 					System.out.print("Do you want to randomise your ships placement(Y/N): ");
 					String answer = in.nextLine();
 					if(answer.equals("Y"))
@@ -384,18 +394,107 @@ public class ClientMain
 					}
 					else
 					{
-
+						boolean done = false;
+						while(!done)
+						{
+							System.out.println("Place your ships. To recreate ships' placement type <-1>");
+							int[][] field = new int[12][12];
+							List<Ship> result = new ArrayList<>();
+							int[] sizes = { 1, 1, 1, 1, 2, 2, 2, 3, 3, 4 };
+							while(sizes.length > 0)
+							{
+								int x;
+								int y;
+								int len;
+								boolean vert;
+								System.out.println("New ship:");
+								System.out.print("Enter x of ship's start: ");
+								x = in.nextInt();
+								if(retry(x))
+								{
+									continue;
+								}
+								System.out.print("Enter y of ship's start: ");
+								y = in.nextInt();
+								if(retry(y))
+								{
+									continue;
+								}
+								System.out.print("Enter length of the ship: ");
+								len = in.nextInt();
+								if(retry(len))
+								{
+									continue;
+								}
+								System.out.print("Enter orientation of the ship(0 - horizontal, 1 - vertical): ");
+								int or = in.nextInt();
+								if(retry(or))
+								{
+									continue;
+								}
+								if(or == 0)
+								{
+									vert = false;
+								}
+								else
+								{
+									vert = true;
+								}
+								if(len < 0 || len > 4)
+								{
+									System.out.println("Incorrect ship size");
+									System.out.println("Current field's state:");
+									printField(field);
+									continue;
+								}
+								if(Arrays.binarySearch(sizes, len) < 0)
+								{
+									System.out.println("Ships with such size are already placed");
+									System.out.println("Current field's state:");
+									printField(field);
+									continue;
+								}
+								try
+								{
+									Ship s = new Ship(x, y, len, vert);
+									if(canPlace(field, s))
+									{
+										placeOnField(field, s);
+										result.add(s);
+										sizes = removeElement(sizes, Arrays.binarySearch(sizes, len));
+									}
+									else
+									{
+										System.out.println("Can't place ship");
+									}
+								}
+								catch(Exception e)
+								{
+									System.out.println(e);
+								}
+								System.out.println("Current field's state:");
+								printField(field);
+							}
+							done = true;
+							System.out.println("Ships created");
+							return new MessagePlaceShips(ses.userNickName, ses.currentGameSessionID, result);
+						}
 					}
 				}
 				case Protocol.CMD_READY:
 				{
 					System.out.println("You are ready!");
-					return new MessageReadyToPlay(ses.userNickName, ses.currentGameSessionID);
+					if(!ses.playerReady)
+					{
+						ses.playerReady = true;
+						return new MessageReadyToPlay(ses.userNickName, ses.currentGameSessionID);
+					}
+					break;
 				}
 				default: 
 				{
 					System.err.println("Unknown command!");
-					continue;
+					break;
 				}
 			}
 		}
@@ -403,6 +502,50 @@ public class ClientMain
 	catch(Exception e)
 	{}
 	return new MessageDisconnect();
+	}
+
+	public static int[] removeElement(int[] array, int index) {
+		if (index < 0 || index >= array.length) {
+			return array.clone();
+		}
+		
+		int[] newArray = new int[array.length - 1];
+		System.arraycopy(array, 0, newArray, 0, index);
+		System.arraycopy(array, index + 1, newArray, index, array.length - index - 1);
+		return newArray;
+	}
+
+	static boolean retry(int n)
+	{
+		if (n == -1)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	static void printField(int[][] field)
+	{
+		for(int i = 1; i < 11; ++i)
+		{
+			for(int j = 1; j < 11; ++j)
+			{
+				if(field[i][j] == 0)
+				{
+					System.out.print(".");
+					continue;
+				}
+				if(field[i][j] == 1)
+				{
+					System.out.print("*");
+					continue;
+				}
+			}
+			System.out.println();
+		}
 	}
 
 	static List<Ship> randomShips() {
@@ -462,13 +605,13 @@ public class ClientMain
 		} else {
 		if (x + len - 1 > 10)
 			return false;
-		}
-
+	}
+	
 		for (int i = 0; i < len; i++) {
 		int cx = x + (vert ? 0 : i);
 		int cy = y + (vert ? i : 0);
 
-		if (field[cx][cy] != 0) {
+		if (field[cy][cx] != 0) {
 			return false;
 		}
 
@@ -480,14 +623,13 @@ public class ClientMain
 
 			// Проверяем только клетки в пределах игрового поля (1-10)
 			if (nx >= 1 && nx <= 10 && ny >= 1 && ny <= 10) {
-				if (field[nx][ny] != 0) {
+				if (field[ny][nx] != 0) {
 				return false;
 				}
 			}
 			}
 		}
 		}
-
 		return true;
 	}
 
@@ -503,7 +645,7 @@ public class ClientMain
 
 		// Убеждаемся, что координаты в пределах игрового поля
 		if (cx >= 1 && cx <= 10 && cy >= 1 && cy <= 10) {
-			field[cx][cy] = 1;
+			field[cy][cx] = 1;
 		}
 		}
 	}
