@@ -447,8 +447,8 @@ class ServerClientHandler extends Thread {
 									ServerMain.setSession(sessionId, null);
 								}
 							}
-							unregister();
-
+							//unregister();
+							
 							ServerMain.log("DISCONNECT", "User " + userNic + " fully disconnected");
 							return;
 

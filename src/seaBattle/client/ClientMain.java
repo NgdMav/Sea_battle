@@ -254,7 +254,7 @@ public class ClientMain
 							Message msg = getCommand(ses, in, is, os);
 							os.writeObject(msg);
 							if(msg.getID() == Protocol.CMD_DISCONNECT)
-							{ 
+							{
 								lt.stopListening();
 								break;
 							}	
