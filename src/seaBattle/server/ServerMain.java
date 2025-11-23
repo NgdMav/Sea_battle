@@ -544,7 +544,7 @@ class ServerClientHandler extends Thread {
 											msgmove.getFrom() + " move done",
 											msgmove.getSessionId(), msgmove.getX(),
 											msgmove.getY(), res.hitted, res.sunked,
-											res.gameOver, res.field));
+											res.gameOver, res.field, false));
 
 									ServerClientHandler enemy = ServerMain
 											.getUser(session.getEnemyNic(msgmove.getFrom()));
@@ -552,7 +552,7 @@ class ServerClientHandler extends Thread {
 											msgmove.getFrom() + " move done",
 											msgmove.getSessionId(), msgmove.getX(),
 											msgmove.getY(), res.hitted, res.sunked,
-											res.gameOver, res.field)));
+											res.gameOver, res.field, true)));
 								}
 
 								if (res.gameOver) {
@@ -586,6 +586,9 @@ class ServerClientHandler extends Thread {
 							session = ServerMain.getSession(msggetf.getSessionId());
 							int[][] field = session.getField(msggetf.getFrom());
 							sendMessage(new MessageGetFieldResult(field));
+							break;
+						
+						case Protocol.CMD_IGNORE:
 							break;
 					}
 			}

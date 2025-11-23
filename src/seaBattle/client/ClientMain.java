@@ -10,6 +10,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.TreeMap;
 import javax.crypto.spec.ChaCha20ParameterSpec;
@@ -21,10 +22,12 @@ import seaBattle.protocol.messages.Message;
 import seaBattle.protocol.messages.messages.MessageChallenge;
 import seaBattle.protocol.messages.messages.MessageConnect;
 import seaBattle.protocol.messages.messages.MessageDisconnect;
+import seaBattle.protocol.messages.messages.MessageIgnore;
 import seaBattle.protocol.messages.messages.MessagePing;
 import seaBattle.protocol.messages.messages.MessageUser;
 import seaBattle.protocol.messages.messagesRequest.MessageChallengeRequest;
 import seaBattle.protocol.messages.messagesRequest.MessageGameStart;
+import seaBattle.protocol.messages.messagesRequest.MessageMove;
 import seaBattle.protocol.messages.messagesRequest.MessageOpponentReady;
 import seaBattle.protocol.messages.messagesRequest.MessagePlaceShips;
 import seaBattle.protocol.messages.messagesRequest.MessageReadyToPlay;
@@ -34,6 +37,7 @@ import seaBattle.protocol.messages.messagesResult.MessageChallengeResult;
 import seaBattle.protocol.messages.messagesResult.MessageConnectResult;
 import seaBattle.protocol.messages.messagesResult.MessageError;
 import seaBattle.protocol.messages.messagesResult.MessageGameOver;
+import seaBattle.protocol.messages.messagesResult.MessageMoveResult;
 import seaBattle.protocol.messages.messagesResult.MessagePlaceShipsResult;
 import seaBattle.protocol.messages.messagesResult.MessageUserResult;
 
@@ -109,6 +113,7 @@ public class ClientMain
 		boolean gameStarted = false;
 		boolean playerReady = false;
 		boolean yourTurn = false;
+		String notProcessedSymbols = new String("0123456789YN");
 		Session(String userNickName, String userFullName) 
 		{
 			this.userNickName = userNickName;
@@ -169,7 +174,7 @@ public class ClientMain
 							ChallengeFromPlayer cfp = new ChallengeFromPlayer(((MessageChallengeRequest) msg).getChallengeId(), ((MessageChallengeRequest) msg).getFrom());
 							ses.challenges.add(cfp);
 							System.out.println("You've received challenge request " + ((MessageChallengeRequest) msg).getChallengeId() + " from " + ((MessageChallengeRequest) msg).getFrom());
-							System.out.println("To answer the challenge enter 'atc'");
+							System.out.println("To answer the challenge enter 'answer'");
 							break;
 						}
 						case Protocol.CMD_CHALLENGE:
@@ -227,6 +232,55 @@ public class ClientMain
 							ses.gameStarted = true;
 							break;
 						}
+						case Protocol.CMD_MOVE:
+						{
+							int x = ((MessageMoveResult) msg).getX();
+							int y = ((MessageMoveResult) msg).getY();
+							boolean hitted = ((MessageMoveResult) msg).getHitted();
+							boolean sunked = ((MessageMoveResult) msg).getSunked();
+							int[][] enemyField = ((MessageMoveResult) msg).getEnemyField();
+							boolean enemy = ((MessageMoveResult) msg).getEnemy();
+							if(hitted)
+							{
+								Random random = new Random();
+								int randomNumber = random.nextInt(3);
+								if(randomNumber == 0)
+								{
+									System.out.println("Popal: " + x + " " + y);
+								}
+								if(randomNumber == 1)
+								{
+									System.out.println("Tochno v cel: " + x + " " + y);
+								}
+								if(randomNumber == 2)
+								{
+									System.out.println("Da ty snayper: " + x + " " + y);
+								}
+								if(sunked)
+								{
+									System.out.println("Potopil nedruga");
+								}
+							}
+							else
+							{
+								System.out.println("Blya mymo: " + x + " " + y);
+							}
+							if(!enemy)
+							{
+								System.out.println("Pole nedruga: ");
+							}
+							else
+							{
+								System.out.println("Matushka zemlya: ");
+							}
+							printField(enemyField);
+							break;	
+						}
+						case Protocol.CMD_GAMEOVER:
+						{
+							System.out.println("Game over");
+							break;
+						}
 						default:
 							assert(false);
 							break;
@@ -257,6 +311,7 @@ public class ClientMain
 						while (true) 
 						{
 							Message msg = getCommand(ses, in, is, os);
+
 							os.writeObject(msg);
 							if(msg.getID() == Protocol.CMD_DISCONNECT)
 							{
@@ -312,6 +367,10 @@ public class ClientMain
 			if (in.hasNextLine()== false)
 				break;
 			String str = in.nextLine();
+			if(ses.notProcessedSymbols.contains(str))
+			{
+				return new MessageIgnore();
+			}
 			byte cmd = translateCmd(str);
 			if (cmd == -1) {
                 System.out.println("Disconnecting...");
@@ -330,7 +389,7 @@ public class ClientMain
 				case Protocol.CMD_CHALLENGE:
 				{
 					os.writeObject(new MessageUser());
-					Thread.currentThread().sleep(1000);
+					Thread.currentThread().sleep(500);
 					System.out.print("Enter opponent's nickname: ");
 					String opponentNickName = in.nextLine();
 					return new MessageChallenge(ses.userNickName, opponentNickName);
@@ -381,7 +440,7 @@ public class ClientMain
 				{
 					if(ses.gameStarted)
 					{
-						System.out.println("You can' place ships during the game");
+						System.out.println("You can't place ships during the game");
 						break;
 					}
 					System.out.print("Do you want to randomise your ships placement(Y/N): ");
@@ -390,6 +449,13 @@ public class ClientMain
 					{
 						List<Ship> ships = randomShips();
 						System.out.println("Ships created");
+						int field[][] = new int[12][12];
+						for(Ship ship : ships)
+						{
+							placeOnField(field, ship);
+						}
+						System.out.println("Matushka zemlya:");
+						printField(field);
 						return new MessagePlaceShips(ses.userNickName, ses.currentGameSessionID, ships);
 					}
 					else
@@ -477,6 +543,8 @@ public class ClientMain
 							}
 							done = true;
 							System.out.println("Ships created");
+							System.out.println("Matushka zemlya:");
+							printField(field);
 							return new MessagePlaceShips(ses.userNickName, ses.currentGameSessionID, result);
 						}
 					}
@@ -491,6 +559,16 @@ public class ClientMain
 					}
 					break;
 				}
+				case Protocol.CMD_MOVE:
+					{
+						System.out.print("Enter x: ");
+						int x;
+						x = in.nextInt();
+						int y;
+						System.out.print("Enter y: ");
+						y = in.nextInt();
+						return new MessageMove(ses.userNickName, ses.currentGameSessionID, x, y);
+					}
 				default: 
 				{
 					System.err.println("Unknown command!");
@@ -529,18 +607,42 @@ public class ClientMain
 
 	static void printField(int[][] field)
 	{
+		System.out.print("   ");
 		for(int i = 1; i < 11; ++i)
 		{
+			System.out.print(i + " ");
+		}
+		System.out.println();
+		for(int i = 1; i < 11; ++i)
+		{
+			if(i == 10)
+			{
+				System.out.print(i + " ");
+			}
+			else
+			{
+				System.out.print(i + "  ");
+			}
 			for(int j = 1; j < 11; ++j)
 			{
 				if(field[i][j] == 0)
 				{
-					System.out.print(".");
+					System.out.print(". ");
 					continue;
 				}
 				if(field[i][j] == 1)
 				{
-					System.out.print("*");
+					System.out.print("S ");
+					continue;
+				}
+				if(field[i][j] == 2)
+				{
+					System.out.print("M ");
+					continue;
+				}
+				if(field[i][j] == 3)
+				{
+					System.out.print("H ");
 					continue;
 				}
 			}
@@ -657,10 +759,12 @@ public class ClientMain
 		commands.put("ping", Byte.valueOf(Protocol.CMD_PING));
 		commands.put("users", Byte.valueOf(Protocol.CMD_USER));
 		commands.put("challenge", Byte.valueOf(Protocol.CMD_CHALLENGE));
-		commands.put("atc", Byte.valueOf(Protocol.CMD_CHALLENGE_RESPONSE));
+		commands.put("answer", Byte.valueOf(Protocol.CMD_CHALLENGE_RESPONSE));
 		commands.put("q", Byte.valueOf((byte) -1));
 		commands.put("place", Byte.valueOf(Protocol.CMD_SHIP_PLACE));
 		commands.put("ready", Byte.valueOf(Protocol.CMD_READY));
+		commands.put("move", Byte.valueOf(Protocol.CMD_MOVE));
+		commands.put("field", Byte.valueOf(Protocol.CMD_MOVE));
 	}
 	
 	static byte translateCmd(String str) 

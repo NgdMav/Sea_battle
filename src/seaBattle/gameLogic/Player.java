@@ -169,20 +169,20 @@ public class Player implements Field {
         boolean hitted = false;
         boolean sunked = false;
         boolean gameOver = false;
-        if (field[x][y] != SHIP) {
-            if (field[x][y] == EMPTY) {
-                field[x][y] = MISS;
+        if (field[y][x] != SHIP) {
+            if (field[y][x] == EMPTY) {
+                field[y][x] = MISS;
             }
             return new MoveResult(hitted, sunked, gameOver, getSafeField(field));
         }
         hitted = true;
-        field[x][y] = HITTED;
+        field[y][x] = HITTED;
 
         sunked = checkIsSunked(x, y);
         for (int i = 0; i < field.length; i++) {
             for (int j = 0; j < field.length; j++) {
-                if (field[i][j] == CHECK) {
-                    field[i][j] = HITTED;
+                if (field[j][i] == CHECK) {
+                    field[j][i] = HITTED;
                 }
             }
         }
@@ -191,7 +191,7 @@ public class Player implements Field {
         if (sunked) {
             for (int i = 0; i < field.length; i++) {
                 for (int j = 0; j < field.length; j++) {
-                    if (field[i][j] == SHIP) {
+                    if (field[j][i] == SHIP) {
                         gameOver = false;
                         return new MoveResult(hitted, sunked, gameOver, getSafeField(field));
                     }
@@ -205,44 +205,44 @@ public class Player implements Field {
     private boolean checkIsSunked(int x, int y) {
         Queue<int[]> q = new ArrayDeque<>();
         q.add(new int[] { x, y });
-        field[x][y] = CHECK;
+        field[y][x] = CHECK;
 
         while (!q.isEmpty()) {
             int[] el = q.poll();
             int xnew = el[0];
             int ynew = el[1];
 
-            if (field[xnew - 1][ynew] == SHIP) {
+            if (field[ynew - 1][xnew] == SHIP) {
                 return false;
             }
-            if (field[xnew + 1][ynew] == SHIP) {
+            if (field[ynew + 1][xnew] == SHIP) {
                 return false;
             }
-            if (field[xnew][ynew - 1] == SHIP) {
+            if (field[ynew][xnew - 1] == SHIP) {
                 return false;
             }
-            if (field[xnew][ynew + 1] == SHIP) {
+            if (field[ynew][xnew + 1] == SHIP) {
                 return false;
             }
 
-            if (field[xnew - 1][ynew] == HITTED) {
-                q.add(new int[] { xnew - 1, ynew });
-                field[xnew - 1][ynew] = CHECK;
+            if (field[ynew - 1][xnew] == HITTED) {
+                q.add(new int[] { ynew - 1, xnew });
+                field[ynew - 1][xnew] = CHECK;
             }
 
-            if (field[xnew + 1][ynew] == HITTED) {
-                q.add(new int[] { xnew + 1, ynew });
-                field[xnew + 1][ynew] = CHECK;
+            if (field[ynew + 1][xnew] == HITTED) {
+                q.add(new int[] { ynew + 1, xnew });
+                field[ynew + 1][xnew] = CHECK;
             }
 
-            if (field[xnew][ynew - 1] == HITTED) {
-                q.add(new int[] { xnew, ynew - 1 });
-                field[xnew][ynew - 1] = CHECK;
+            if (field[ynew][xnew - 1] == HITTED) {
+                q.add(new int[] { ynew, xnew - 1 });
+                field[ynew][xnew - 1] = CHECK;
             }
 
-            if (field[xnew][ynew + 1] == HITTED) {
-                q.add(new int[] { xnew, ynew + 1 });
-                field[xnew][ynew + 1] = CHECK;
+            if (field[ynew][xnew + 1] == HITTED) {
+                q.add(new int[] { ynew, xnew + 1 });
+                field[ynew][xnew + 1] = CHECK;
             }
         }
 
@@ -253,7 +253,7 @@ public class Player implements Field {
         int[][] res = new int[12][12];
         for (int i = 0; i < res.length; i++) {
             for (int j = 0; j < res.length; j++) {
-                res[i][j] = (field[i][j] == SHIP) ? EMPTY : field[i][j];
+                res[j][i] = (field[j][i] == SHIP) ? EMPTY : field[j][i];
             }
         }
         return res;
@@ -262,7 +262,7 @@ public class Player implements Field {
     public void clearField() {
         for (int i = 0; i < field.length; i++) {
             for (int j = 0; j < field.length; j++) {
-                field[i][j] = EMPTY;
+                field[j][i] = EMPTY;
             }
         }
     }
