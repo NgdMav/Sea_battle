@@ -544,7 +544,7 @@ class ServerClientHandler extends Thread {
 											msgmove.getFrom() + " move done",
 											msgmove.getSessionId(), msgmove.getX(),
 											msgmove.getY(), res.hitted, res.sunked,
-											res.gameOver, res.field, false));
+											res.gameOver, res.field, true));
 
 									ServerClientHandler enemy = ServerMain
 											.getUser(session.getEnemyNic(msgmove.getFrom()));
@@ -552,7 +552,7 @@ class ServerClientHandler extends Thread {
 											msgmove.getFrom() + " move done",
 											msgmove.getSessionId(), msgmove.getX(),
 											msgmove.getY(), res.hitted, res.sunked,
-											res.gameOver, res.field, true)));
+											res.gameOver, res.field, false)));
 								}
 
 								if (res.gameOver) {
