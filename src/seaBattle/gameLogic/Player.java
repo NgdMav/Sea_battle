@@ -199,6 +199,13 @@ public class Player implements Field {
             if (field[y][x] == EMPTY) {
                 field[y][x] = MISS;
             }
+            if (field[y][x] == HITTED) {
+                hitted = true;
+            }
+            if (field[y][x] == SUNKED) {
+                hitted = true;
+                sunked = true;
+            }
             return new MoveResult(hitted, sunked, gameOver, getSafeField(field));
         }
         hitted = true;
@@ -227,6 +234,11 @@ public class Player implements Field {
         }
         MoveResult res = new MoveResult(hitted, sunked, gameOver, getSafeField(field));
         return res;
+    }
+
+    public int[][] getEnemyField()
+    {
+        return field;
     }
 
     private boolean checkIsSunked(int x, int y) {
