@@ -14,9 +14,10 @@ public class MessageMoveResult extends MessageResult {
     private boolean sunked;
     private boolean gameOver;
     private int[][] enemyField;
+    private boolean enemy;
 
     public MessageMoveResult(boolean isGood, String message, long sessionId, int x, int y, boolean hitted,
-            boolean sunked, boolean gameOver, int[][] enemyField) {
+            boolean sunked, boolean gameOver, int[][] enemyField, boolean enemy) {
         super(Protocol.CMD_MOVE, isGood, message);
         this.sessionId = sessionId;
         this.x = x;
@@ -25,6 +26,7 @@ public class MessageMoveResult extends MessageResult {
         this.sunked = sunked;
         this.gameOver = gameOver;
         this.enemyField = enemyField;
+        this.enemy = enemy;
     }
 
     public MessageMoveResult(byte id, boolean isGood, String message, long sessionId, int x, int y, boolean hitted,
@@ -65,5 +67,10 @@ public class MessageMoveResult extends MessageResult {
 
     public int[][] getEnemyField() {
         return enemyField;
+    }
+
+    public boolean getEnemy()
+    {
+        return enemy;
     }
 }

@@ -21,10 +21,12 @@ import seaBattle.protocol.messages.messages.MessageChallenge;
 import seaBattle.protocol.messages.messages.MessageConnect;
 import seaBattle.protocol.messages.messages.MessageUser;
 import seaBattle.protocol.messages.messagesRequest.MessageChallengeRequest;
+import seaBattle.protocol.messages.messagesRequest.MessageChallengeSuccesfullySend;
 import seaBattle.protocol.messages.messagesRequest.MessageForfeit;
 import seaBattle.protocol.messages.messagesRequest.MessageGameStart;
 import seaBattle.protocol.messages.messagesRequest.MessageGetField;
 import seaBattle.protocol.messages.messagesRequest.MessageMove;
+import seaBattle.protocol.messages.messagesRequest.MessageOpponentReady;
 import seaBattle.protocol.messages.messagesRequest.MessagePlaceShips;
 import seaBattle.protocol.messages.messagesRequest.MessageReadyToPlay;
 import seaBattle.protocol.messages.messagesResponse.MessageChallengeResponse;
@@ -187,11 +189,13 @@ public class ServerMain {
 
 	public static GameSession setSession(long sessionId, GameSession session) {
 		synchronized (ServerMain.syncSession) {
-			GameSession res = ServerMain.gameSessions.put(sessionId, session);
 			if (session == null) {
-				ServerMain.gameSessions.remove(sessionId);
+				return ServerMain.gameSessions.remove(sessionId);
 			}
-			return res;
+			else
+			{
+				return ServerMain.gameSessions.put(sessionId, session);
+			}
 		}
 	}
 
@@ -443,8 +447,8 @@ class ServerClientHandler extends Thread {
 									ServerMain.setSession(sessionId, null);
 								}
 							}
-							unregister();
-
+							//unregister();
+							
 							ServerMain.log("DISCONNECT", "User " + userNic + " fully disconnected");
 							return;
 
@@ -455,15 +459,15 @@ class ServerClientHandler extends Thread {
 						case Protocol.CMD_CHALLENGE:
 							MessageChallenge challenge = (MessageChallenge) msg;
 							ServerClientHandler target = ServerMain.getUser(challenge.getToNic());
-
 							if (target != null) {
 								long cid = ServerMain.nextChallengeId();
 								Challenge ch = new Challenge(cid, userNic, challenge.getToNic());
 								ServerMain.registerChallenge(ch);
+								String from = challenge.getFromNic();
+								os.writeObject(new MessageChallengeSuccesfullySend(from, cid));
 								target.sendMessage(new MessageChallengeRequest(userNic, cid));
 								ServerMain.log("CHALLENGE",
 										"Created: " + cid + " " + userNic + " - " + challenge.getToNic());
-								sendMessage(new MessageError("You successfully send challenge"));
 							} else {
 								os.writeObject(new MessageError("Target player not found"));
 							}
@@ -511,14 +515,20 @@ class ServerClientHandler extends Thread {
 							boolean good = session.setPlaceShip(mPlaceShips.getFrom(), mPlaceShips.getShips());
 							sendMessage(new MessagePlaceShipsResult(good, ""));
 							break;
-
+							
 						case Protocol.CMD_READY:
-							MessageReadyToPlay mready = (MessageReadyToPlay) msg;
+							MessageReadyToPlay mready = (MessageReadyToPlay) msg; 
 							session = ServerMain.getSession(mready.getSessionId());
+							String currentPlayer = mready.getFrom();
+							String enemyNic = session.getEnemyNic(currentPlayer);	
+							ServerClientHandler enemyP = ServerMain.getUser(enemyNic);
+							if (enemyP != null) {
+								enemyP.sendMessage(new MessageOpponentReady(currentPlayer, session.getSessionId()));
+							}
 							boolean start = session.playerReady(mready.getFrom());
 							if (start) {
-								sendMessage(new MessageReadyToPlay(session.getToStart(), session.getSessionId()));
 								ServerClientHandler enemy = ServerMain.getUser(session.getEnemyNic(mready.getFrom()));
+								sendMessage(new MessageReadyToPlay(session.getToStart(), session.getSessionId()));
 								enemy.sendMessage(new MessageReadyToPlay(session.getToStart(), session.getSessionId()));
 							}
 							break;
@@ -529,12 +539,11 @@ class ServerClientHandler extends Thread {
 							try {
 								MoveResult res = session.move(msgmove.getFrom(), msgmove.getX(), msgmove.getY());
 
-								if (!res.gameOver) {
 									sendMessage(new MessageMoveResult(true,
 											msgmove.getFrom() + " move done",
 											msgmove.getSessionId(), msgmove.getX(),
 											msgmove.getY(), res.hitted, res.sunked,
-											res.gameOver, res.field));
+											res.gameOver, res.field, true));
 
 									ServerClientHandler enemy = ServerMain
 											.getUser(session.getEnemyNic(msgmove.getFrom()));
@@ -542,14 +551,11 @@ class ServerClientHandler extends Thread {
 											msgmove.getFrom() + " move done",
 											msgmove.getSessionId(), msgmove.getX(),
 											msgmove.getY(), res.hitted, res.sunked,
-											res.gameOver, res.field)));
-								}
+											res.gameOver, res.field, false)));
 
 								if (res.gameOver) {
 									sendMessage(new MessageGameOver(true, "Game over", msgmove.getSessionId(),
 											msgmove.getFrom()));
-									ServerClientHandler enemy = ServerMain
-											.getUser(session.getEnemyNic(msgmove.getFrom()));
 									enemy.sendMessage(new MessageGameOver(true, "Game over", msgmove.getSessionId(),
 											msgmove.getFrom()));
 								}
@@ -576,6 +582,9 @@ class ServerClientHandler extends Thread {
 							session = ServerMain.getSession(msggetf.getSessionId());
 							int[][] field = session.getField(msggetf.getFrom());
 							sendMessage(new MessageGetFieldResult(field));
+							break;
+						
+						case Protocol.CMD_IGNORE:
 							break;
 					}
 			}
